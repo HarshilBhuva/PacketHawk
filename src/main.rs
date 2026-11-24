@@ -1,7 +1,11 @@
 use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
-use packethawk::{config::AppConfig, ingest::CaptureReader};
+use packethawk::{
+    config::AppConfig,
+    flow::{FlowAggregator, FlowConfig, FlowDirection},
+    ingest::CaptureReader,
+};
 
 #[derive(Debug, Parser)]
 #[command(
@@ -48,6 +52,23 @@ enum CaptureCommands {
         #[arg(long)]
         json: bool,
     },
+    /// Aggregate capture packets into bounded network flows.
+    Flows {
+        /// Path to a PCAP or PCAPNG file.
+        path: PathBuf,
+        /// Emit the complete flow report as JSON.
+        #[arg(long)]
+        json: bool,
+        /// Maximum number of active flows retained in memory.
+        #[arg(long, default_value_t = 100_000)]
+        max_active_flows: usize,
+        /// Idle timeout in seconds.
+        #[arg(long, default_value_t = 120)]
+        idle_timeout_secs: u64,
+        /// Keep each source-to-destination direction as a separate flow.
+        #[arg(long)]
+        directional: bool,
+    },
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -70,6 +91,63 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 println!("Capture: {}", path.display());
                 println!("Decoded packets: {}", report.packets.len());
                 println!("Skipped packet frames: {}", report.skipped_packets);
+            }
+        }
+        Some(Commands::Capture {
+            command:
+                CaptureCommands::Flows {
+                    path,
+                    json,
+                    max_active_flows,
+                    idle_timeout_secs,
+                    directional,
+                },
+        }) => {
+            let capture = CaptureReader::read_path(&path)?;
+            let config = FlowConfig {
+                max_active_flows,
+                idle_timeout_ns: (idle_timeout_secs as u128).saturating_mul(1_000_000_000),
+                direction: if directional {
+                    FlowDirection::Directional
+                } else {
+                    FlowDirection::Bidirectional
+                },
+            };
+            let mut aggregator = FlowAggregator::new(config)?;
+            for packet in &capture.packets {
+                aggregator.observe(packet);
+            }
+            let mut report = aggregator.report();
+
+            if json {
+                println!("{}", serde_json::to_string_pretty(&report)?);
+            } else {
+                println!("Capture: {}", path.display());
+                println!("Packets aggregated: {}", report.stats.packets_seen);
+                println!("Active flows: {}", report.stats.active_flows);
+                println!("Flows expired: {}", report.stats.flows_expired);
+                println!("Flows evicted: {}", report.stats.flows_evicted);
+                report.flows.sort_by(|left, right| {
+                    right
+                        .total_bytes
+                        .cmp(&left.total_bytes)
+                        .then_with(|| left.key.cmp(&right.key))
+                });
+                println!("\nTop flows by bytes:");
+                for flow in report.flows.iter().take(10) {
+                    let source_port = flow.key.source_port.map_or_else(|| "-".to_owned(), |port| port.to_string());
+                    let destination_port = flow.key.destination_port.map_or_else(|| "-".to_owned(), |port| port.to_string());
+                    println!(
+                        "{:>8} packets  {:>12} bytes  {}:{} -> {}:{}  {:?}",
+                        flow.packet_count,
+                        flow.total_bytes,
+                        flow.key.source_ip,
+                        source_port,
+                        flow.key.destination_ip,
+                        destination_port,
+                        flow.key.protocol
+                    );
+                }
             }
         }
         None => {

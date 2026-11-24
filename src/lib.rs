@@ -4,5 +4,6 @@
 //! flow aggregation, detection, and reporting can be tested in isolation.
 
 pub mod config;
+pub mod flow;
 pub mod ingest;
 pub mod models;

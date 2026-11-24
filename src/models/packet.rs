@@ -3,7 +3,7 @@ use std::net::IpAddr;
 use serde::{Deserialize, Serialize};
 
 /// Transport or network-layer protocol identified during packet decoding.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum TransportProtocol {
     Tcp,
