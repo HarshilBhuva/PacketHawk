@@ -172,10 +172,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             } else {
                 println!("Capture: {}", path.display());
                 println!("Packets analyzed: {}", capture.packets.len());
-                println!("Vertical port-scan alerts: {}", report.port_scan.stats.vertical_alerts);
-                println!("Horizontal port-scan alerts: {}", report.port_scan.stats.horizontal_alerts);
+                println!(
+                    "Vertical port-scan alerts: {}",
+                    report.port_scan.stats.vertical_alerts
+                );
+                println!(
+                    "Horizontal port-scan alerts: {}",
+                    report.port_scan.stats.horizontal_alerts
+                );
                 println!("Beaconing alerts: {}", report.beaconing.stats.alerts);
-                for alert in report.port_scan.alerts.iter().chain(&report.beaconing.alerts) {
+                for alert in report
+                    .port_scan
+                    .alerts
+                    .iter()
+                    .chain(&report.beaconing.alerts)
+                {
                     println!(
                         "\n[{:?}] {} ({:.0}% heuristic confidence)",
                         alert.severity,

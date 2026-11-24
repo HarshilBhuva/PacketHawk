@@ -33,7 +33,12 @@ fn detects_regular_periodic_conversation() {
     let report = BeaconDetector::new(config()).analyze(&packets);
     assert_eq!(report.stats.alerts, 1);
     assert_eq!(report.alerts[0].rule_id, "NETWORK_BEACONING");
-    assert!(report.alerts[0].evidence.iter().any(|line| line.contains("Mean interval")));
+    assert!(
+        report.alerts[0]
+            .evidence
+            .iter()
+            .any(|line| line.contains("Mean interval"))
+    );
 }
 
 #[test]

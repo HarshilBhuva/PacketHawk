@@ -1,7 +1,4 @@
-use std::{
-    collections::HashMap,
-    net::IpAddr,
-};
+use std::{collections::HashMap, net::IpAddr};
 
 use serde::{Deserialize, Serialize};
 
@@ -101,9 +98,7 @@ impl BeaconDetector {
                 continue;
             }
 
-            let severity = if coefficient_of_variation
-                <= self.config.beacon_max_interval_cv * 0.5
-            {
+            let severity = if coefficient_of_variation <= self.config.beacon_max_interval_cv * 0.5 {
                 Severity::High
             } else {
                 Severity::Medium
@@ -131,12 +126,19 @@ impl BeaconDetector {
                         "Interval standard deviation: {:.3} ms",
                         standard_deviation / 1_000_000.0
                     ),
-                    format!("Interval coefficient of variation: {:.4}", coefficient_of_variation),
+                    format!(
+                        "Interval coefficient of variation: {:.4}",
+                        coefficient_of_variation
+                    ),
                     format!(
                         "Configured maximum interval CV: {:.4}",
                         self.config.beacon_max_interval_cv
                     ),
-                    format!("Capture window: {}..={} ns", timestamps[0], timestamps[timestamps.len() - 1]),
+                    format!(
+                        "Capture window: {}..={} ns",
+                        timestamps[0],
+                        timestamps[timestamps.len() - 1]
+                    ),
                     format!("Transport: {:?}", key.protocol),
                 ],
             });
