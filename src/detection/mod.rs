@@ -1,12 +1,14 @@
 //! Explainable offline traffic detections.
 
 pub mod beacon;
+pub mod dns_anomaly;
 pub mod port_scan;
 
 use serde::Serialize;
 
 use self::{
     beacon::{BeaconDetector, BeaconReport},
+    dns_anomaly::{DnsAnomalyDetector, DnsAnomalyReport},
     port_scan::{PortScanDetector, PortScanReport},
 };
 use crate::{config::DetectionConfig, models::NormalizedPacket};
@@ -15,6 +17,7 @@ use crate::{config::DetectionConfig, models::NormalizedPacket};
 pub struct DetectionReport {
     pub port_scan: PortScanReport,
     pub beaconing: BeaconReport,
+    pub dns_anomaly: DnsAnomalyReport,
 }
 
 /// Runs the currently implemented packet-level detection rules.
@@ -31,6 +34,7 @@ impl DetectionEngine {
         DetectionReport {
             port_scan: PortScanDetector::new(self.config.clone()).analyze(packets),
             beaconing: BeaconDetector::new(self.config.clone()).analyze(packets),
+            dns_anomaly: DnsAnomalyDetector::new(self.config.clone()).analyze(packets),
         }
     }
 }

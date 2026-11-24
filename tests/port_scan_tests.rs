@@ -21,6 +21,7 @@ fn packet(
         protocol: TransportProtocol::Tcp,
         packet_size: 60,
         tcp_flags: Some(2),
+        dns_query_name: None,
     }
 }
 

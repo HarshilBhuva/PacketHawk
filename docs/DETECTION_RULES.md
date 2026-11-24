@@ -22,3 +22,10 @@ Legitimate inventory scans, vulnerability scanners, monitoring systems, and appl
 
 - DNS query anomalies: excessive query length and high-entropy labels (requires DNS parsing).
 - Network beaconing: regular inter-arrival intervals for repeated destination conversations.
+
+
+## DNS_QUERY_ANOMALY
+
+The capture decoder extracts the first question name from UDP DNS packets on port 53. It validates DNS headers, label lengths, compression pointers, pointer depth, and the 253-byte wire-name limit. The detector flags names exceeding the configured length threshold or Shannon-entropy threshold and deduplicates identical source/query pairs per capture analysis.
+
+DNS over TCP, DoH, DoT, encrypted DNS, DNS response correlation, and multi-question analysis are not implemented. Long or high-entropy names can be legitimate; findings are triage indicators, not malicious-domain verdicts.
