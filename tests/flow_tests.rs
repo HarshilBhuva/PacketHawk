@@ -103,16 +103,25 @@ fn capacity_evicts_the_least_recently_seen_flow() {
     let report = aggregator.report();
     assert_eq!(report.stats.flows_evicted, 1);
     assert_eq!(report.stats.active_flows, 1);
-    assert_eq!(report.flows[0].key.source_ip, IpAddr::V4(Ipv4Addr::new(10, 0, 0, 3)));
+    assert_eq!(
+        report.flows[0].key.source_ip,
+        IpAddr::V4(Ipv4Addr::new(10, 0, 0, 3))
+    );
 }
 
 #[test]
 fn zero_capacity_and_zero_timeout_are_rejected() {
     let mut settings = config();
     settings.max_active_flows = 0;
-    assert!(matches!(FlowAggregator::new(settings), Err(FlowError::ZeroCapacity)));
+    assert!(matches!(
+        FlowAggregator::new(settings),
+        Err(FlowError::ZeroCapacity)
+    ));
 
     let mut settings = config();
     settings.idle_timeout_ns = 0;
-    assert!(matches!(FlowAggregator::new(settings), Err(FlowError::ZeroIdleTimeout)));
+    assert!(matches!(
+        FlowAggregator::new(settings),
+        Err(FlowError::ZeroIdleTimeout)
+    ));
 }

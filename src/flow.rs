@@ -107,10 +107,9 @@ impl FlowAggregator {
     /// Add one normalized packet to the appropriate flow.
     pub fn observe(&mut self, packet: &NormalizedPacket) {
         self.stats.packets_seen = self.stats.packets_seen.saturating_add(1);
-        self.watermark_ns = Some(
-            self.watermark_ns
-                .map_or(packet.timestamp_ns, |current| current.max(packet.timestamp_ns)),
-        );
+        self.watermark_ns = Some(self.watermark_ns.map_or(packet.timestamp_ns, |current| {
+            current.max(packet.timestamp_ns)
+        }));
         self.expire_idle_flows();
 
         let (key, is_forward) = self.flow_key(packet);
@@ -164,7 +163,8 @@ impl FlowAggregator {
     fn flow_key(&self, packet: &NormalizedPacket) -> (FlowKey, bool) {
         let source = (packet.source_ip, packet.source_port);
         let destination = (packet.destination_ip, packet.destination_port);
-        let is_forward = self.config.direction == FlowDirection::Directional || source <= destination;
+        let is_forward =
+            self.config.direction == FlowDirection::Directional || source <= destination;
         let (source_ip, source_port, destination_ip, destination_port) = if is_forward {
             (
                 packet.source_ip,

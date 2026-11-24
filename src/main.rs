@@ -135,8 +135,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 });
                 println!("\nTop flows by bytes:");
                 for flow in report.flows.iter().take(10) {
-                    let source_port = flow.key.source_port.map_or_else(|| "-".to_owned(), |port| port.to_string());
-                    let destination_port = flow.key.destination_port.map_or_else(|| "-".to_owned(), |port| port.to_string());
+                    let source_port = flow
+                        .key
+                        .source_port
+                        .map_or_else(|| "-".to_owned(), |port| port.to_string());
+                    let destination_port = flow
+                        .key
+                        .destination_port
+                        .map_or_else(|| "-".to_owned(), |port| port.to_string());
                     println!(
                         "{:>8} packets  {:>12} bytes  {}:{} -> {}:{}  {:?}",
                         flow.packet_count,
