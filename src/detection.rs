@@ -8,12 +8,21 @@ use crate::{
 const MAX_TARGETS_PER_TRACKER: usize = 4096;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-enum Target { Port(u16), Host(IpAddr) }
+enum Target {
+    Port(u16),
+    Host(IpAddr),
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 enum ScanKey {
-    Vertical { source: IpAddr, destination: IpAddr },
-    Horizontal { source: IpAddr, destination_port: u16 },
+    Vertical {
+        source: IpAddr,
+        destination: IpAddr,
+    },
+    Horizontal {
+        source: IpAddr,
+        destination_port: u16,
+    },
 }
 
 #[derive(Debug, Default)]
@@ -52,7 +61,10 @@ impl PortScanDetector {
     }
 
     pub fn observe(&mut self, packet: &NormalizedPacket) -> Vec<SecurityAlert> {
-        if !matches!(packet.protocol, TransportProtocol::Tcp | TransportProtocol::Udp) {
+        if !matches!(
+            packet.protocol,
+            TransportProtocol::Tcp | TransportProtocol::Udp
+        ) {
             return Vec::new();
         }
         let (Some(_source_port), Some(destination_port)) =
@@ -60,7 +72,9 @@ impl PortScanDetector {
         else {
             return Vec::new();
         };
-        let watermark = self.watermark_ns.map_or(packet.timestamp_ns, |old| old.max(packet.timestamp_ns));
+        let watermark = self
+            .watermark_ns
+            .map_or(packet.timestamp_ns, |old| old.max(packet.timestamp_ns));
         self.watermark_ns = Some(watermark);
         if watermark.saturating_sub(packet.timestamp_ns) >= self.window_ns {
             return Vec::new();
@@ -78,26 +92,38 @@ impl PortScanDetector {
         if let Some(alert) = self.observe_vertical(vertical_key, destination_port, packet) {
             alerts.push(alert);
         }
-        if let Some(alert) = self.observe_horizontal(horizontal_key, packet.destination_ip, packet) {
+        if let Some(alert) = self.observe_horizontal(horizontal_key, packet.destination_ip, packet)
+        {
             alerts.push(alert);
         }
         alerts
     }
 
-    fn observe_vertical(&mut self, key: ScanKey, port: u16, packet: &NormalizedPacket) -> Option<SecurityAlert> {
+    fn observe_vertical(
+        &mut self,
+        key: ScanKey,
+        port: u16,
+        packet: &NormalizedPacket,
+    ) -> Option<SecurityAlert> {
         if !self.vertical.contains_key(&key) {
             self.ensure_capacity();
             self.vertical.insert(key.clone(), Tracker::default());
         }
         let tracker = self.vertical.get_mut(&key)?;
         let watermark = self.watermark_ns.unwrap_or(packet.timestamp_ns);
-        tracker.targets.retain(|_, seen| watermark.saturating_sub(*seen) < self.window_ns);
+        tracker
+            .targets
+            .retain(|_, seen| watermark.saturating_sub(*seen) < self.window_ns);
         tracker.last_updated_ns = tracker.last_updated_ns.max(packet.timestamp_ns);
         if tracker.targets.len() < MAX_TARGETS_PER_TRACKER {
             tracker.targets.entry(Target::Port(port)).or_insert(packet.timestamp_ns);
         }
-        if tracker.targets.is_empty() { tracker.alerted = false; }
-        if tracker.alerted || tracker.targets.len() < self.vertical_threshold { return None; }
+        if tracker.targets.is_empty() {
+            tracker.alerted = false;
+        }
+        if tracker.alerted || tracker.targets.len() < self.vertical_threshold {
+            return None;
+        }
         tracker.alerted = true;
         let mut ports: Vec<u16> = tracker.targets.keys().filter_map(|t| match t { Target::Port(p) => Some(*p), _ => None }).collect();
         ports.sort_unstable();
@@ -119,20 +145,31 @@ impl PortScanDetector {
         })
     }
 
-    fn observe_horizontal(&mut self, key: ScanKey, host: IpAddr, packet: &NormalizedPacket) -> Option<SecurityAlert> {
+    fn observe_horizontal(
+        &mut self,
+        key: ScanKey,
+        host: IpAddr,
+        packet: &NormalizedPacket,
+    ) -> Option<SecurityAlert> {
         if !self.horizontal.contains_key(&key) {
             self.ensure_capacity();
             self.horizontal.insert(key.clone(), Tracker::default());
         }
         let tracker = self.horizontal.get_mut(&key)?;
         let watermark = self.watermark_ns.unwrap_or(packet.timestamp_ns);
-        tracker.targets.retain(|_, seen| watermark.saturating_sub(*seen) < self.window_ns);
+        tracker
+            .targets
+            .retain(|_, seen| watermark.saturating_sub(*seen) < self.window_ns);
         tracker.last_updated_ns = tracker.last_updated_ns.max(packet.timestamp_ns);
         if tracker.targets.len() < MAX_TARGETS_PER_TRACKER {
             tracker.targets.entry(Target::Host(host)).or_insert(packet.timestamp_ns);
         }
-        if tracker.targets.is_empty() { tracker.alerted = false; }
-        if tracker.alerted || tracker.targets.len() < self.horizontal_threshold { return None; }
+        if tracker.targets.is_empty() {
+            tracker.alerted = false;
+        }
+        if tracker.alerted || tracker.targets.len() < self.horizontal_threshold {
+            return None;
+        }
         tracker.alerted = true;
         let mut hosts: Vec<IpAddr> = tracker.targets.keys().filter_map(|t| match t { Target::Host(ip) => Some(*ip), _ => None }).collect();
         hosts.sort_unstable();
@@ -155,7 +192,9 @@ impl PortScanDetector {
     }
 
     fn ensure_capacity(&mut self) {
-        if self.active_tracker_count() < self.max_trackers { return; }
+        if self.active_tracker_count() < self.max_trackers {
+            return;
+        }
         let oldest_vertical = self.vertical.iter().min_by_key(|(_, t)| t.last_updated_ns).map(|(k, t)| (t.last_updated_ns, k.clone()));
         let oldest_horizontal = self.horizontal.iter().min_by_key(|(_, t)| t.last_updated_ns).map(|(k, t)| (t.last_updated_ns, k.clone()));
         match (oldest_vertical, oldest_horizontal) {
