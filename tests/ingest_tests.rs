@@ -71,7 +71,6 @@ fn pcapng_fixture(frame: &[u8]) -> Vec<u8> {
     bytes
 }
 
-
 fn ethernet_ipv4_udp_dns(query: &str) -> Vec<u8> {
     let mut dns = vec![0u8; 12];
     dns[0..2].copy_from_slice(&0x1234u16.to_be_bytes());
