@@ -1,6 +1,6 @@
 use std::io::Cursor;
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{Criterion, black_box, criterion_group, criterion_main};
 use packethawk::ingest::CaptureReader;
 
 fn ethernet_ipv4_tcp() -> Vec<u8> {
