@@ -140,16 +140,30 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 println!("Flows expired: {}", report.stats.flows_expired);
                 println!("Flows evicted: {}", report.stats.flows_evicted);
                 report.flows.sort_by(|left, right| {
-                    right.total_bytes.cmp(&left.total_bytes).then_with(|| left.key.cmp(&right.key))
+                    right
+                        .total_bytes
+                        .cmp(&left.total_bytes)
+                        .then_with(|| left.key.cmp(&right.key))
                 });
                 println!("\nTop flows by bytes:");
                 for flow in report.flows.iter().take(10) {
-                    let source_port = flow.key.source_port.map_or_else(|| "-".to_owned(), |port| port.to_string());
-                    let destination_port = flow.key.destination_port.map_or_else(|| "-".to_owned(), |port| port.to_string());
+                    let source_port = flow
+                        .key
+                        .source_port
+                        .map_or_else(|| "-".to_owned(), |port| port.to_string());
+                    let destination_port = flow
+                        .key
+                        .destination_port
+                        .map_or_else(|| "-".to_owned(), |port| port.to_string());
                     println!(
                         "{:>8} packets  {:>12} bytes  {}:{} -> {}:{}  {:?}",
-                        flow.packet_count, flow.total_bytes, flow.key.source_ip, source_port,
-                        flow.key.destination_ip, destination_port, flow.key.protocol
+                        flow.packet_count,
+                        flow.total_bytes,
+                        flow.key.source_ip,
+                        source_port,
+                        flow.key.destination_ip,
+                        destination_port,
+                        flow.key.protocol
                     );
                 }
             }
@@ -171,7 +185,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 println!("Vertical scan alerts: {}", report.stats.vertical_alerts);
                 println!("Horizontal scan alerts: {}", report.stats.horizontal_alerts);
                 for alert in &report.alerts {
-                    println!("\n[{:?}] {} ({:.0}% confidence)", alert.severity, alert.title, alert.confidence * 100.0);
+                    println!(
+                        "\n[{:?}] {} ({:.0}% confidence)",
+                        alert.severity,
+                        alert.title,
+                        alert.confidence * 100.0
+                    );
                     for evidence in &alert.evidence {
                         println!("  - {evidence}");
                     }

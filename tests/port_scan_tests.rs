@@ -41,10 +41,25 @@ fn detects_vertical_scan_and_includes_evidence() {
         packet(3, [192, 0, 2, 10], [198, 51, 100, 5], 443),
     ];
     let report = PortScanDetector::new(config()).analyze(&packets);
-    let alert = report.alerts.iter().find(|a| a.rule_id == "PORT_SCAN_VERTICAL").unwrap();
-    assert_eq!(alert.source_ip, Some(IpAddr::V4(Ipv4Addr::new(192, 0, 2, 10))));
-    assert_eq!(alert.destination_ip, Some(IpAddr::V4(Ipv4Addr::new(198, 51, 100, 5))));
-    assert!(alert.evidence.iter().any(|line| line.contains("22, 80, 443")));
+    let alert = report
+        .alerts
+        .iter()
+        .find(|a| a.rule_id == "PORT_SCAN_VERTICAL")
+        .unwrap();
+    assert_eq!(
+        alert.source_ip,
+        Some(IpAddr::V4(Ipv4Addr::new(192, 0, 2, 10)))
+    );
+    assert_eq!(
+        alert.destination_ip,
+        Some(IpAddr::V4(Ipv4Addr::new(198, 51, 100, 5)))
+    );
+    assert!(
+        alert
+            .evidence
+            .iter()
+            .any(|line| line.contains("22, 80, 443"))
+    );
     assert!((0.0..=1.0).contains(&alert.confidence));
 }
 
@@ -57,7 +72,12 @@ fn detects_horizontal_scan_across_hosts() {
     ];
     let report = PortScanDetector::new(config()).analyze(&packets);
     assert_eq!(report.stats.horizontal_alerts, 1);
-    assert!(report.alerts[0].evidence.iter().any(|line| line.contains("3 unique destination hosts")));
+    assert!(
+        report.alerts[0]
+            .evidence
+            .iter()
+            .any(|line| line.contains("3 unique destination hosts"))
+    );
 }
 
 #[test]

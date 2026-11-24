@@ -42,7 +42,10 @@ impl PortScanDetector {
 
         for packet in packets {
             if packet.destination_port.is_some()
-                && matches!(packet.protocol, TransportProtocol::Tcp | TransportProtocol::Udp)
+                && matches!(
+                    packet.protocol,
+                    TransportProtocol::Tcp | TransportProtocol::Udp
+                )
             {
                 by_source.entry(packet.source_ip).or_default().push(packet);
                 considered = considered.saturating_add(1);
@@ -98,14 +101,30 @@ impl PortScanDetector {
         for right in 0..packets.len() {
             let packet = packets[right];
             let destination = packet.destination_ip;
-            let port = packet.destination_port.expect("filtered port-bearing packets");
-            *vertical.entry(destination).or_default().entry(port).or_default() += 1;
-            *horizontal.entry(port).or_default().entry(destination).or_default() += 1;
+            let port = packet
+                .destination_port
+                .expect("filtered port-bearing packets");
+            *vertical
+                .entry(destination)
+                .or_default()
+                .entry(port)
+                .or_default() += 1;
+            *horizontal
+                .entry(port)
+                .or_default()
+                .entry(destination)
+                .or_default() += 1;
 
-            while packet.timestamp_ns.saturating_sub(packets[left].timestamp_ns) > window_ns {
+            while packet
+                .timestamp_ns
+                .saturating_sub(packets[left].timestamp_ns)
+                > window_ns
+            {
                 let expired = packets[left];
                 let expired_destination = expired.destination_ip;
-                let expired_port = expired.destination_port.expect("filtered port-bearing packets");
+                let expired_port = expired
+                    .destination_port
+                    .expect("filtered port-bearing packets");
                 decrement(&mut vertical, &expired_destination, &expired_port);
                 decrement(&mut horizontal, &expired_port, &expired_destination);
                 left += 1;
@@ -116,13 +135,12 @@ impl PortScanDetector {
                     && emitted_vertical.insert(destination)
                 {
                     let observed: BTreeSet<_> = ports.keys().copied().collect();
-                    let severity = if observed.len()
-                        >= self.config.port_scan_unique_ports.saturating_mul(2)
-                    {
-                        Severity::High
-                    } else {
-                        Severity::Medium
-                    };
+                    let severity =
+                        if observed.len() >= self.config.port_scan_unique_ports.saturating_mul(2) {
+                            Severity::High
+                        } else {
+                            Severity::Medium
+                        };
                     alerts.push(SecurityAlert {
                         rule_id: "PORT_SCAN_VERTICAL".into(),
                         title: format!("Vertical port scan against {destination}"),
@@ -134,8 +152,14 @@ impl PortScanDetector {
                             format!("Observed {} unique destination ports", observed.len()),
                             format!("Destination ports: {}", join_ports(&observed)),
                             format!("Window: {} seconds", self.config.scan_window_secs),
-                            format!("Configured threshold: {} unique ports", self.config.port_scan_unique_ports),
-                            format!("Capture window: {}..={} ns", packets[left].timestamp_ns, packet.timestamp_ns),
+                            format!(
+                                "Configured threshold: {} unique ports",
+                                self.config.port_scan_unique_ports
+                            ),
+                            format!(
+                                "Capture window: {}..={} ns",
+                                packets[left].timestamp_ns, packet.timestamp_ns
+                            ),
                         ],
                     });
                 }
@@ -159,14 +183,23 @@ impl PortScanDetector {
                         severity,
                         source_ip: Some(source_ip),
                         destination_ip: None,
-                        confidence: confidence(observed.len(), self.config.horizontal_scan_unique_hosts),
+                        confidence: confidence(
+                            observed.len(),
+                            self.config.horizontal_scan_unique_hosts,
+                        ),
                         evidence: vec![
                             format!("Observed {} unique destination hosts", observed.len()),
                             format!("Destination port: {port}"),
                             format!("Destination hosts: {}", join_hosts(&observed)),
                             format!("Window: {} seconds", self.config.scan_window_secs),
-                            format!("Configured threshold: {} unique hosts", self.config.horizontal_scan_unique_hosts),
-                            format!("Capture window: {}..={} ns", packets[left].timestamp_ns, packet.timestamp_ns),
+                            format!(
+                                "Configured threshold: {} unique hosts",
+                                self.config.horizontal_scan_unique_hosts
+                            ),
+                            format!(
+                                "Capture window: {}..={} ns",
+                                packets[left].timestamp_ns, packet.timestamp_ns
+                            ),
                         ],
                     });
                 }
@@ -199,9 +232,17 @@ fn confidence(observed: usize, threshold: usize) -> f32 {
 }
 
 fn join_ports(ports: &BTreeSet<u16>) -> String {
-    ports.iter().map(u16::to_string).collect::<Vec<_>>().join(", ")
+    ports
+        .iter()
+        .map(u16::to_string)
+        .collect::<Vec<_>>()
+        .join(", ")
 }
 
 fn join_hosts(hosts: &BTreeSet<std::net::IpAddr>) -> String {
-    hosts.iter().map(ToString::to_string).collect::<Vec<_>>().join(", ")
+    hosts
+        .iter()
+        .map(ToString::to_string)
+        .collect::<Vec<_>>()
+        .join(", ")
 }
