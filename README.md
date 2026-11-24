@@ -4,11 +4,11 @@
 
 PacketHawk inspects PCAP/PCAPNG captures, normalizes packet metadata, reconstructs network flows, identifies suspicious traffic patterns, and produces evidence-backed security alerts.
 
-> **Development status:** M3 adds explainable vertical and horizontal TCP/UDP port-scan heuristics on top of bounded flow aggregation.
+> **Development status:** M4 adds periodic-traffic beaconing heuristics alongside vertical and horizontal port-scan detection.
 
 ## How PacketHawk works
 
-PacketHawk is designed as an offline analysis pipeline. It starts with a saved capture, safely decodes supported network layers, builds bounded bidirectional or directional flow records, and evaluates explainable detection rules.
+PacketHawk analyzes saved captures through a bounded ingestion, decoding, flow, and detection pipeline.
 
 ![PacketHawk architecture pipeline](docs/assets/packethawk-pipeline.svg)
 
@@ -19,16 +19,15 @@ PacketHawk is designed as an offline analysis pipeline. It starts with a saved c
 ## Current capabilities
 
 - Read classic PCAP and PCAPNG captures.
-- Decode Ethernet II, VLAN, Linux cooked, and supported raw IP frames.
-- Extract IPv4/IPv6 addresses and TCP/UDP/ICMP metadata.
+- Decode supported Ethernet, VLAN, Linux cooked, IPv4/IPv6, TCP/UDP/ICMP metadata.
 - Count malformed packet frames without panicking and cap input at 512 MiB.
-- Inspect captures with concise or JSON summaries.
 - Aggregate bounded directional or bidirectional five-tuple flows.
 - Track packet/byte counters, direction, first/last seen timestamps, and duration.
-- Expire idle flows and evict the least-recently-seen flow at configured capacity.
-- Detect vertical port scans (one source to many ports on one host).
-- Detect horizontal port scans (one source to one service port across many hosts).
-- Emit evidence-backed alerts with severity, confidence, observed values, and thresholds.
+- Expire idle flows and evict least-recently-seen flows at configured capacity.
+- Detect vertical TCP/UDP port scans across destination ports.
+- Detect horizontal TCP/UDP scans across destination hosts.
+- Detect regular periodic TCP/UDP conversations using inter-arrival coefficient of variation.
+- Emit evidence-backed alerts with severity, heuristic confidence, observed values, and thresholds.
 
 ## Getting started
 
@@ -40,24 +39,13 @@ cargo test
 cargo run -- --help
 ```
 
-Inspect and summarize:
+Inspect, aggregate, and detect:
 
 ```bash
 cargo run -- capture inspect sample.pcap
 cargo run -- capture flows sample.pcap --json
-```
-
-Run port-scan detections:
-
-```bash
 cargo run -- capture detect sample.pcap
 cargo run -- capture detect sample.pcap --config config/default.toml --json
-```
-
-Validate configuration:
-
-```bash
-cargo run -- config check config/default.toml
 ```
 
 ## Development checks
@@ -76,19 +64,17 @@ cargo build --release
 | M0 | Foundation, models, configuration, CI | Complete |
 | M1 | Offline PCAP/PCAPNG ingestion | Complete |
 | M2 | Bounded flow aggregation | Complete |
-| M3 | Vertical and horizontal port-scan detections | Implemented in this branch |
-| M4 | DNS anomalies and beaconing detections | Next |
-| M5 | Streaming, benchmarks, and v0.1.0 release hardening | Planned |
+| M3 | Vertical and horizontal port-scan detections | Complete |
+| M4 | Periodic-traffic beaconing detection | Implemented in this branch |
+| M5 | DNS query parsing/anomalies, streaming, benchmarks, release hardening | Planned |
 
 ## Detection interpretation
 
-Port-scan rules are threshold-based heuristics over TCP/UDP packets. A vertical scan counts unique destination ports for one source/destination-host pair; a horizontal scan counts unique destination hosts for one source/destination-port pair. Windows use capture timestamps and are evaluated per source. Retransmissions to the same endpoint do not inflate unique counts. Input packets are timestamp-sorted before evaluation.
+Port-scan rules use unique destination endpoints in capture-time sliding windows. Beaconing analysis groups TCP/UDP packets by source, destination, destination port, and transport protocol, then evaluates inter-arrival interval coefficient of variation. It requires the configured minimum sample count and ignores zero-length intervals.
 
-Alerts contain the observed endpoint set, configured threshold, time window, severity, and a heuristic confidence score. These detections are investigative leads, not proof of compromise. The current capture reader materializes decoded packets before analysis; streaming ingestion and DNS/beaconing rules remain future work.
+A low coefficient of variation can also describe legitimate polling, monitoring, software updates, and persistent application sessions. Confidence is a heuristic score, not a calibrated probability. Alerts are investigative leads, not proof of compromise.
 
-## Limitations
-
-No live capture, packet injection, blocking, TCP stream reassembly, IP fragment reassembly, or application-layer session reconstruction. IPv4 non-initial fragments and IPv6 extension-header chains are skipped rather than partially decoded.
+The current capture reader materializes decoded packets before analysis. DNS anomaly detection is not enabled because the parser does not yet extract DNS query names. No live capture, packet injection, blocking, or active scanning is performed.
 
 ## License
 
