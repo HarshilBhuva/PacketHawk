@@ -8,19 +8,14 @@ use thiserror::Error;
 use crate::models::{FlowKey, NetworkFlow, NormalizedPacket};
 
 /// Determines whether reverse-direction packets share the same flow record.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum FlowDirection {
     /// Canonicalize endpoint order and aggregate both directions together.
+    #[default]
     Bidirectional,
     /// Preserve source-to-destination direction in the flow key.
     Directional,
-}
-
-impl Default for FlowDirection {
-    fn default() -> Self {
-        Self::Bidirectional
-    }
 }
 
 /// Resource and identity policy for the flow table.
@@ -196,10 +191,7 @@ impl FlowAggregator {
         let Some(watermark) = self.watermark_ns else {
             return;
         };
-        loop {
-            let Some((last_seen, key)) = self.recency.first().cloned() else {
-                break;
-            };
+        while let Some((last_seen, key)) = self.recency.first().cloned() {
             if watermark.saturating_sub(last_seen) < self.config.idle_timeout_ns {
                 break;
             }
