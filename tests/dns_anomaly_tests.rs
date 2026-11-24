@@ -33,7 +33,12 @@ fn flags_long_dns_query_names() {
     assert_eq!(report.stats.queries_inspected, 1);
     assert_eq!(report.stats.anomalous_queries, 1);
     assert_eq!(report.alerts[0].rule_id, "DNS_QUERY_ANOMALY");
-    assert!(report.alerts[0].evidence.iter().any(|line| line.contains(query)));
+    assert!(
+        report.alerts[0]
+            .evidence
+            .iter()
+            .any(|line| line.contains(query))
+    );
 }
 
 #[test]
@@ -43,8 +48,7 @@ fn flags_high_entropy_dns_query_names() {
         dns_entropy_threshold: 3.0,
         ..DetectionConfig::default()
     };
-    let report = DnsAnomalyDetector::new(config)
-        .analyze(&[packet("a8f3k9x2m7q4v6z1.example")]);
+    let report = DnsAnomalyDetector::new(config).analyze(&[packet("a8f3k9x2m7q4v6z1.example")]);
 
     assert_eq!(report.stats.anomalous_queries, 1);
 }
