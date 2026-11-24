@@ -1,6 +1,6 @@
 use std::net::{IpAddr, Ipv4Addr};
 
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{BenchmarkId, Criterion, black_box, criterion_group, criterion_main};
 use packethawk::{
     config::DetectionConfig,
     detection::DetectionEngine,
@@ -13,12 +13,7 @@ fn synthetic_packets(count: usize) -> Vec<NormalizedPacket> {
         .map(|index| NormalizedPacket {
             timestamp_ns: (index as u128) * 1_000_000,
             source_ip: IpAddr::V4(Ipv4Addr::new(10, 0, 0, (index % 16 + 1) as u8)),
-            destination_ip: IpAddr::V4(Ipv4Addr::new(
-                198,
-                51,
-                100,
-                (index % 64 + 1) as u8,
-            )),
+            destination_ip: IpAddr::V4(Ipv4Addr::new(198, 51, 100, (index % 64 + 1) as u8)),
             source_port: Some(40_000 + (index % 1000) as u16),
             destination_port: Some(443 + (index % 50) as u16),
             protocol: TransportProtocol::Tcp,
