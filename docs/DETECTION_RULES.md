@@ -1,29 +1,24 @@
 # Detection Rules
 
-This document defines the intended first-release heuristics. Thresholds are starting defaults and must remain configurable.
-
 ## PORT_SCAN_VERTICAL
 
-One source contacts an unusually large number of distinct destination ports on one destination host within a configured time window.
+One source contacts at least `port_scan_unique_ports` distinct TCP/UDP destination ports on one destination host within `scan_window_secs`.
 
-Evidence should include source and destination addresses, observed destination ports, time window, threshold, and packet/flow references.
+Evidence includes the source and destination addresses, observed destination ports, capture-time window, and configured threshold. Repeated packets to one port do not increase the unique-port count.
 
 ## PORT_SCAN_HORIZONTAL
 
-One source contacts the same destination service port across an unusually large number of destination hosts within a configured time window.
+One source contacts at least `horizontal_scan_unique_hosts` distinct destination hosts on one TCP/UDP service port within `scan_window_secs`.
 
-Evidence should include source address, destination port, unique destination hosts, time window, and threshold.
+Evidence includes source address, destination port, observed destination hosts, capture-time window, and configured threshold.
 
-## DNS_QUERY_ANOMALY
+## Alert interpretation
 
-A source generates DNS query names that exceed configured length or entropy heuristics. Long or high-entropy names can occur in legitimate applications, CDNs, and tracking systems; the rule must not label a domain malicious solely on this basis.
+Severity increases when the observed unique endpoint count reaches at least twice the configured threshold. Confidence is a bounded heuristic score based on the observed-to-threshold ratio; it is not a calibrated probability.
 
-## NETWORK_BEACONING
+Legitimate inventory scans, vulnerability scanners, monitoring systems, and application retries can produce these patterns. Alerts are investigative leads, not proof of compromise.
 
-A source repeatedly contacts the same destination with sufficiently regular inter-arrival intervals and enough observations to reduce noise.
+## Planned rules
 
-The first implementation should calculate interval mean, standard deviation, and coefficient of variation. It must account for missing observations and timestamp precision.
-
-## Alert quality
-
-Every alert must identify the rule, severity, observed values, threshold, observation window, confidence rationale, and supporting evidence. Heuristic findings are investigative leads, not proof of compromise.
+- DNS query anomalies: excessive query length and high-entropy labels (requires DNS parsing).
+- Network beaconing: regular inter-arrival intervals for repeated destination conversations.
