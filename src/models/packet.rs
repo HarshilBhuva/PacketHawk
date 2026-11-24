@@ -26,4 +26,7 @@ pub struct NormalizedPacket {
     pub packet_size: u32,
     /// TCP flags when the packet carries a TCP header.
     pub tcp_flags: Option<u8>,
+    /// First DNS question name extracted from a valid UDP DNS query.
+    #[serde(default)]
+    pub dns_query_name: Option<String>,
 }
