@@ -78,7 +78,7 @@ impl BeaconDetector {
                 .windows(2)
                 .map(|pair| pair[1].saturating_sub(pair[0]) as f64)
                 .collect();
-            if intervals.iter().any(|interval| *interval == 0.0) {
+            if intervals.contains(&0.0) {
                 continue;
             }
 
