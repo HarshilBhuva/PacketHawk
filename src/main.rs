@@ -181,11 +181,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     report.port_scan.stats.horizontal_alerts
                 );
                 println!("Beaconing alerts: {}", report.beaconing.stats.alerts);
+                println!("DNS anomaly alerts: {}", report.dns_anomaly.stats.anomalous_queries);
                 for alert in report
                     .port_scan
                     .alerts
                     .iter()
                     .chain(&report.beaconing.alerts)
+                    .chain(&report.dns_anomaly.alerts)
                 {
                     println!(
                         "\n[{:?}] {} ({:.0}% heuristic confidence)",
