@@ -1,0 +1,128 @@
+use std::{
+    io::Cursor,
+    net::{IpAddr, Ipv4Addr},
+};
+
+use packethawk::{ingest::CaptureReader, models::TransportProtocol};
+
+fn ethernet_ipv4_tcp() -> Vec<u8> {
+    let mut frame = vec![0u8; 14 + 20 + 20];
+    frame[12..14].copy_from_slice(&0x0800u16.to_be_bytes());
+    let ip = &mut frame[14..34];
+    ip[0] = 0x45;
+    ip[2..4].copy_from_slice(&40u16.to_be_bytes());
+    ip[8] = 64;
+    ip[9] = 6;
+    ip[12..16].copy_from_slice(&[192, 0, 2, 10]);
+    ip[16..20].copy_from_slice(&[198, 51, 100, 20]);
+    let tcp = &mut frame[34..54];
+    tcp[0..2].copy_from_slice(&49152u16.to_be_bytes());
+    tcp[2..4].copy_from_slice(&443u16.to_be_bytes());
+    tcp[12] = 0x50;
+    tcp[13] = 0x02;
+    frame
+}
+
+fn pcap_fixture(frame: &[u8]) -> Vec<u8> {
+    let mut bytes = vec![
+        0xd4, 0xc3, 0xb2, 0xa1, 2, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0,
+    ];
+    bytes.extend_from_slice(&7u32.to_le_bytes());
+    bytes.extend_from_slice(&500_000u32.to_le_bytes());
+    bytes.extend_from_slice(&(frame.len() as u32).to_le_bytes());
+    bytes.extend_from_slice(&(frame.len() as u32).to_le_bytes());
+    bytes.extend_from_slice(frame);
+    bytes
+}
+
+fn pcapng_fixture(frame: &[u8]) -> Vec<u8> {
+    let mut bytes = Vec::new();
+
+    // Section Header Block (little endian).
+    bytes.extend_from_slice(&[0x0a, 0x0d, 0x0d, 0x0a]);
+    bytes.extend_from_slice(&28u32.to_le_bytes());
+    bytes.extend_from_slice(&[0x4d, 0x3c, 0x2b, 0x1a]);
+    bytes.extend_from_slice(&1u16.to_le_bytes());
+    bytes.extend_from_slice(&0u16.to_le_bytes());
+    bytes.extend_from_slice(&(-1i64).to_le_bytes());
+    bytes.extend_from_slice(&28u32.to_le_bytes());
+
+    // Interface Description Block: Ethernet, default microsecond resolution.
+    bytes.extend_from_slice(&1u32.to_le_bytes());
+    bytes.extend_from_slice(&20u32.to_le_bytes());
+    bytes.extend_from_slice(&1u16.to_le_bytes());
+    bytes.extend_from_slice(&0u16.to_le_bytes());
+    bytes.extend_from_slice(&65535u32.to_le_bytes());
+    bytes.extend_from_slice(&20u32.to_le_bytes());
+
+    // Enhanced Packet Block.
+    let padded_len = (frame.len() + 3) & !3;
+    let block_len = 32 + padded_len;
+    bytes.extend_from_slice(&6u32.to_le_bytes());
+    bytes.extend_from_slice(&(block_len as u32).to_le_bytes());
+    bytes.extend_from_slice(&0u32.to_le_bytes()); // Interface ID.
+    bytes.extend_from_slice(&0u32.to_le_bytes()); // Timestamp high.
+    bytes.extend_from_slice(&1_500_000u32.to_le_bytes()); // Timestamp low.
+    bytes.extend_from_slice(&(frame.len() as u32).to_le_bytes());
+    bytes.extend_from_slice(&(frame.len() as u32).to_le_bytes());
+    bytes.extend_from_slice(frame);
+    bytes.resize(bytes.len() + padded_len - frame.len(), 0);
+    bytes.extend_from_slice(&(block_len as u32).to_le_bytes());
+    bytes
+}
+
+#[test]
+fn reads_classic_pcap_and_normalizes_tcp_metadata() {
+    let report = CaptureReader::read(Cursor::new(pcap_fixture(&ethernet_ipv4_tcp()))).unwrap();
+    assert_eq!(report.packets.len(), 1);
+    assert_eq!(report.skipped_packets, 0);
+    let packet = &report.packets[0];
+    assert_eq!(packet.timestamp_ns, 7_500_000_000);
+    assert_eq!(packet.source_ip, IpAddr::V4(Ipv4Addr::new(192, 0, 2, 10)));
+    assert_eq!(packet.destination_port, Some(443));
+    assert_eq!(packet.protocol, TransportProtocol::Tcp);
+    assert_eq!(packet.tcp_flags, Some(0x02));
+}
+
+#[test]
+fn reads_pcapng_enhanced_packet_block() {
+    let report = CaptureReader::read(Cursor::new(pcapng_fixture(&ethernet_ipv4_tcp()))).unwrap();
+    assert_eq!(report.packets.len(), 1);
+    assert_eq!(report.packets[0].timestamp_ns, 1_500_000_000);
+    assert_eq!(report.packets[0].destination_port, Some(443));
+}
+
+#[test]
+fn malformed_frame_is_counted_and_does_not_panic() {
+    let report = CaptureReader::read(Cursor::new(pcap_fixture(&[0u8; 8]))).unwrap();
+    assert!(report.packets.is_empty());
+    assert_eq!(report.skipped_packets, 1);
+}
+
+#[test]
+fn rejects_truncated_capture_header() {
+    let error = CaptureReader::read(Cursor::new(vec![0xd4, 0xc3, 0xb2, 0xa1])).unwrap_err();
+    assert!(error.to_string().contains("truncated PCAP global header"));
+}
+
+#[test]
+fn rejects_invalid_packet_length() {
+    let mut capture = pcap_fixture(&ethernet_ipv4_tcp());
+    capture[32..36].copy_from_slice(&9999u32.to_le_bytes());
+    let error = CaptureReader::read(Cursor::new(capture)).unwrap_err();
+    assert!(
+        error
+            .to_string()
+            .contains("invalid or truncated PCAP packet data")
+    );
+}
+
+#[test]
+fn recognizes_pcapng_and_reports_truncated_section() {
+    let error = CaptureReader::read(Cursor::new(vec![0x0a, 0x0d, 0x0d, 0x0a])).unwrap_err();
+    assert!(
+        error
+            .to_string()
+            .contains("truncated PCAPNG section header")
+    );
+}
