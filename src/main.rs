@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use clap::{Parser, Subcommand};
 use packethawk::{
     config::{AppConfig, DetectionConfig},
-    detection::port_scan::PortScanDetector,
+    detection::DetectionEngine,
     flow::{FlowAggregator, FlowConfig, FlowDirection},
     ingest::CaptureReader,
 };
@@ -47,37 +47,27 @@ enum ConfigCommands {
 enum CaptureCommands {
     /// Read a capture and print a packet-ingestion summary.
     Inspect {
-        /// Path to a PCAP or PCAPNG file.
         path: PathBuf,
-        /// Emit the summary as JSON.
         #[arg(long)]
         json: bool,
     },
     /// Aggregate capture packets into bounded network flows.
     Flows {
-        /// Path to a PCAP or PCAPNG file.
         path: PathBuf,
-        /// Emit the complete flow report as JSON.
         #[arg(long)]
         json: bool,
-        /// Maximum number of active flows retained in memory.
         #[arg(long, default_value_t = 100_000)]
         max_active_flows: usize,
-        /// Idle timeout in seconds.
         #[arg(long, default_value_t = 120)]
         idle_timeout_secs: u64,
-        /// Keep each source-to-destination direction as a separate flow.
         #[arg(long)]
         directional: bool,
     },
-    /// Detect vertical and horizontal port-scan patterns in a saved capture.
+    /// Run enabled packet-level detections on a saved capture.
     Detect {
-        /// Path to a PCAP or PCAPNG file.
         path: PathBuf,
-        /// Optional TOML file containing detection thresholds.
         #[arg(long)]
         config: Option<PathBuf>,
-        /// Emit the full detection report as JSON.
         #[arg(long)]
         json: bool,
     },
@@ -176,17 +166,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 Some(path) => AppConfig::load(path)?.detection,
                 None => DetectionConfig::default(),
             };
-            let report = PortScanDetector::new(settings).analyze(&capture.packets);
+            let report = DetectionEngine::new(settings).analyze(&capture.packets);
             if json {
                 println!("{}", serde_json::to_string_pretty(&report)?);
             } else {
                 println!("Capture: {}", path.display());
-                println!("Packets considered: {}", report.stats.packets_considered);
-                println!("Vertical scan alerts: {}", report.stats.vertical_alerts);
-                println!("Horizontal scan alerts: {}", report.stats.horizontal_alerts);
-                for alert in &report.alerts {
+                println!("Packets analyzed: {}", capture.packets.len());
+                println!("Vertical port-scan alerts: {}", report.port_scan.stats.vertical_alerts);
+                println!("Horizontal port-scan alerts: {}", report.port_scan.stats.horizontal_alerts);
+                println!("Beaconing alerts: {}", report.beaconing.stats.alerts);
+                for alert in report.port_scan.alerts.iter().chain(&report.beaconing.alerts) {
                     println!(
-                        "\n[{:?}] {} ({:.0}% confidence)",
+                        "\n[{:?}] {} ({:.0}% heuristic confidence)",
                         alert.severity,
                         alert.title,
                         alert.confidence * 100.0
