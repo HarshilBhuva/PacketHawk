@@ -27,6 +27,7 @@ PacketHawk analyzes saved captures through a bounded ingestion, decoding, flow, 
 - Detect vertical TCP/UDP port scans across destination ports.
 - Detect horizontal TCP/UDP scans across destination hosts.
 - Detect regular periodic TCP/UDP conversations using inter-arrival coefficient of variation.
+- Extract DNS question names from UDP DNS queries and flag long or high-entropy names.
 - Emit evidence-backed alerts with severity, heuristic confidence, observed values, and thresholds.
 
 ## Getting started
@@ -65,8 +66,9 @@ cargo build --release
 | M1 | Offline PCAP/PCAPNG ingestion | Complete |
 | M2 | Bounded flow aggregation | Complete |
 | M3 | Vertical and horizontal port-scan detections | Complete |
-| M4 | Periodic-traffic beaconing detection | Implemented in this branch |
-| M5 | DNS query parsing/anomalies, streaming, benchmarks, release hardening | Planned |
+| M4 | Port-scan and periodic beaconing detections | Complete |
+| M5 | DNS query parsing and anomaly detection | Implemented in this branch |
+| M6 | Streaming, benchmarks, and v0.1.0 release hardening | Planned |
 
 ## Detection interpretation
 
@@ -74,7 +76,7 @@ Port-scan rules use unique destination endpoints in capture-time sliding windows
 
 A low coefficient of variation can also describe legitimate polling, monitoring, software updates, and persistent application sessions. Confidence is a heuristic score, not a calibrated probability. Alerts are investigative leads, not proof of compromise.
 
-The current capture reader materializes decoded packets before analysis. DNS anomaly detection is not enabled because the parser does not yet extract DNS query names. No live capture, packet injection, blocking, or active scanning is performed.
+The current capture reader materializes decoded packets before analysis. DNS anomaly rules flag long or high-entropy DNS question names. DNS over TCP, DoH, DoT, and encrypted DNS payloads remain outside current parser coverage. No live capture, packet injection, blocking, or active scanning is performed.
 
 ## License
 
