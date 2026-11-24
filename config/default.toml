@@ -1,0 +1,11 @@
+# PacketHawk detection thresholds.
+# These are heuristic starting points, not proof of malicious activity.
+
+[detection]
+port_scan_unique_ports = 15
+horizontal_scan_unique_hosts = 20
+scan_window_secs = 60
+beacon_min_samples = 6
+beacon_max_interval_cv = 0.15
+dns_max_query_length = 80
+dns_entropy_threshold = 3.5
