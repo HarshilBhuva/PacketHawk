@@ -4,7 +4,7 @@
 
 PacketHawk inspects PCAP/PCAPNG captures, normalizes packet metadata, reconstructs network flows, identifies suspicious traffic patterns, and produces evidence-backed security alerts.
 
-> **Development status:** M3 adds explainable vertical and horizontal TCP/UDP port-scan heuristics on top of bounded flow aggregation.
+> **Development status:** M4 adds periodic beaconing analysis alongside vertical and horizontal TCP/UDP port-scan heuristics on top of bounded flow aggregation.
 
 ## How PacketHawk works
 
@@ -28,6 +28,7 @@ PacketHawk is designed as an offline analysis pipeline. It starts with a saved c
 - Expire idle flows and evict the least-recently-seen flow at configured capacity.
 - Detect vertical port scans (one source to many ports on one host).
 - Detect horizontal port scans (one source to one service port across many hosts).
+- Detect periodic TCP/UDP conversations using inter-arrival coefficient of variation.
 - Emit evidence-backed alerts with severity, confidence, observed values, and thresholds.
 
 ## Getting started
@@ -77,14 +78,15 @@ cargo build --release
 | M1 | Offline PCAP/PCAPNG ingestion | Complete |
 | M2 | Bounded flow aggregation | Complete |
 | M3 | Vertical and horizontal port-scan detections | Implemented in this branch |
-| M4 | DNS anomalies and beaconing detections | Next |
+| M4 | Beaconing detection | Implemented in this branch |
+| M5 | DNS anomaly detection, streaming, and release hardening | Next |
 | M5 | Streaming, benchmarks, and v0.1.0 release hardening | Planned |
 
 ## Detection interpretation
 
 Port-scan rules are threshold-based heuristics over TCP/UDP packets. A vertical scan counts unique destination ports for one source/destination-host pair; a horizontal scan counts unique destination hosts for one source/destination-port pair. Windows use capture timestamps and are evaluated per source. Retransmissions to the same endpoint do not inflate unique counts. Input packets are timestamp-sorted before evaluation.
 
-Alerts contain the observed endpoint set, configured threshold, time window, severity, and a heuristic confidence score. These detections are investigative leads, not proof of compromise. The current capture reader materializes decoded packets before analysis; streaming ingestion and DNS/beaconing rules remain future work.
+Alerts contain the observed endpoint set, configured threshold, time window, severity, and a heuristic confidence score. These detections are investigative leads, not proof of compromise. The current capture reader materializes decoded packets before analysis; streaming ingestion and DNS anomaly detection remain future work.
 
 ## Limitations
 

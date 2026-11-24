@@ -22,3 +22,10 @@ Legitimate inventory scans, vulnerability scanners, monitoring systems, and appl
 
 - DNS query anomalies: excessive query length and high-entropy labels (requires DNS parsing).
 - Network beaconing: regular inter-arrival intervals for repeated destination conversations.
+
+
+## NETWORK_BEACONING
+
+The beaconing detector groups TCP/UDP packets by source IP, destination IP, destination port, and protocol. It sorts timestamps, calculates inter-arrival intervals, and flags conversations with enough intervals and a coefficient of variation at or below the configured maximum. Conversation count and retained timestamps are bounded.
+
+Periodic traffic can be legitimate. Beaconing findings require process-level, destination reputation, and threat-intelligence context before escalation.

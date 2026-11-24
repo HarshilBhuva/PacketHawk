@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use clap::{Parser, Subcommand};
 use packethawk::{
     config::{AppConfig, DetectionConfig},
-    detection::port_scan::PortScanDetector,
+    detection::{beaconing::BeaconingDetector, port_scan::PortScanDetector},
     flow::{FlowAggregator, FlowConfig, FlowDirection},
     ingest::CaptureReader,
 };
@@ -176,23 +176,29 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 Some(path) => AppConfig::load(path)?.detection,
                 None => DetectionConfig::default(),
             };
-            let report = PortScanDetector::new(settings).analyze(&capture.packets);
+            let port_scan = PortScanDetector::new(settings.clone()).analyze(&capture.packets);
+            let beaconing = BeaconingDetector::new(&settings).analyze(&capture.packets);
+            let report = serde_json::json!({
+                "port_scan": port_scan,
+                "beaconing": beaconing,
+            });
             if json {
                 println!("{}", serde_json::to_string_pretty(&report)?);
             } else {
                 println!("Capture: {}", path.display());
-                println!("Packets considered: {}", report.stats.packets_considered);
-                println!("Vertical scan alerts: {}", report.stats.vertical_alerts);
-                println!("Horizontal scan alerts: {}", report.stats.horizontal_alerts);
-                for alert in &report.alerts {
-                    println!(
-                        "\n[{:?}] {} ({:.0}% confidence)",
-                        alert.severity,
-                        alert.title,
-                        alert.confidence * 100.0
-                    );
-                    for evidence in &alert.evidence {
-                        println!("  - {evidence}");
+                println!("Vertical scan alerts: {}", report["port_scan"]["stats"]["vertical_alerts"]);
+                println!("Horizontal scan alerts: {}", report["port_scan"]["stats"]["horizontal_alerts"]);
+                println!("Periodic conversations: {}", report["beaconing"]["stats"]["periodic_conversations"]);
+                for category in ["port_scan", "beaconing"] {
+                    if let Some(alerts) = report[category]["alerts"].as_array() {
+                        for alert in alerts {
+                            println!("\n[{}] {}", alert["severity"], alert["title"]);
+                            if let Some(evidence) = alert["evidence"].as_array() {
+                                for item in evidence {
+                                    println!("  - {}", item);
+                                }
+                            }
+                        }
                     }
                 }
             }
