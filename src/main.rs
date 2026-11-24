@@ -2,7 +2,8 @@ use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
 use packethawk::{
-    config::AppConfig,
+    config::{AppConfig, DetectionConfig},
+    detection::port_scan::PortScanDetector,
     flow::{FlowAggregator, FlowConfig, FlowDirection},
     ingest::CaptureReader,
 };
@@ -12,7 +13,7 @@ use packethawk::{
     name = "packethawk",
     version,
     about = "Offline-first network threat analysis for PCAP and PCAPNG captures",
-    long_about = "PacketHawk analyzes saved network captures and produces normalized packet metadata. Detection rules are under active development."
+    long_about = "PacketHawk analyzes saved network captures and produces normalized packet metadata and explainable security findings."
 )]
 struct Cli {
     #[command(subcommand)]
@@ -68,6 +69,17 @@ enum CaptureCommands {
         /// Keep each source-to-destination direction as a separate flow.
         #[arg(long)]
         directional: bool,
+    },
+    /// Detect vertical and horizontal port-scan patterns in a saved capture.
+    Detect {
+        /// Path to a PCAP or PCAPNG file.
+        path: PathBuf,
+        /// Optional TOML file containing detection thresholds.
+        #[arg(long)]
+        config: Option<PathBuf>,
+        /// Emit the full detection report as JSON.
+        #[arg(long)]
+        json: bool,
     },
 }
 
@@ -128,31 +140,41 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 println!("Flows expired: {}", report.stats.flows_expired);
                 println!("Flows evicted: {}", report.stats.flows_evicted);
                 report.flows.sort_by(|left, right| {
-                    right
-                        .total_bytes
-                        .cmp(&left.total_bytes)
-                        .then_with(|| left.key.cmp(&right.key))
+                    right.total_bytes.cmp(&left.total_bytes).then_with(|| left.key.cmp(&right.key))
                 });
                 println!("\nTop flows by bytes:");
                 for flow in report.flows.iter().take(10) {
-                    let source_port = flow
-                        .key
-                        .source_port
-                        .map_or_else(|| "-".to_owned(), |port| port.to_string());
-                    let destination_port = flow
-                        .key
-                        .destination_port
-                        .map_or_else(|| "-".to_owned(), |port| port.to_string());
+                    let source_port = flow.key.source_port.map_or_else(|| "-".to_owned(), |port| port.to_string());
+                    let destination_port = flow.key.destination_port.map_or_else(|| "-".to_owned(), |port| port.to_string());
                     println!(
                         "{:>8} packets  {:>12} bytes  {}:{} -> {}:{}  {:?}",
-                        flow.packet_count,
-                        flow.total_bytes,
-                        flow.key.source_ip,
-                        source_port,
-                        flow.key.destination_ip,
-                        destination_port,
-                        flow.key.protocol
+                        flow.packet_count, flow.total_bytes, flow.key.source_ip, source_port,
+                        flow.key.destination_ip, destination_port, flow.key.protocol
                     );
+                }
+            }
+        }
+        Some(Commands::Capture {
+            command: CaptureCommands::Detect { path, config, json },
+        }) => {
+            let capture = CaptureReader::read_path(&path)?;
+            let settings = match config {
+                Some(path) => AppConfig::load(path)?.detection,
+                None => DetectionConfig::default(),
+            };
+            let report = PortScanDetector::new(settings).analyze(&capture.packets);
+            if json {
+                println!("{}", serde_json::to_string_pretty(&report)?);
+            } else {
+                println!("Capture: {}", path.display());
+                println!("Packets considered: {}", report.stats.packets_considered);
+                println!("Vertical scan alerts: {}", report.stats.vertical_alerts);
+                println!("Horizontal scan alerts: {}", report.stats.horizontal_alerts);
+                for alert in &report.alerts {
+                    println!("\n[{:?}] {} ({:.0}% confidence)", alert.severity, alert.title, alert.confidence * 100.0);
+                    for evidence in &alert.evidence {
+                        println!("  - {evidence}");
+                    }
                 }
             }
         }
