@@ -436,6 +436,14 @@ fn decode_frame(link_type: u32, frame: &[u8], timestamp_ns: u128) -> Option<Norm
         other => (TransportProtocol::Other(other), None, None, None),
     };
 
+    let dns_query_name = if protocol == TransportProtocol::Udp
+        && (source_port == Some(53) || destination_port == Some(53))
+    {
+        parse_dns_query_name(transport.get(8..)?)
+    } else {
+        None
+    };
+
     Some(NormalizedPacket {
         timestamp_ns,
         source_ip,
@@ -445,7 +453,80 @@ fn decode_frame(link_type: u32, frame: &[u8], timestamp_ns: u128) -> Option<Norm
         protocol,
         packet_size: frame.len().min(u32::MAX as usize) as u32,
         tcp_flags,
+        dns_query_name,
     })
+}
+
+fn parse_dns_query_name(message: &[u8]) -> Option<String> {
+    if message.len() < 12 {
+        return None;
+    }
+    let flags = u16::from_be_bytes([message[2], message[3]]);
+    let questions = u16::from_be_bytes([message[4], message[5]]);
+    if flags & 0x8000 != 0 || questions == 0 {
+        return None;
+    }
+
+    let mut cursor = 12usize;
+    let mut consumed_end = None;
+    let mut jumped = false;
+    let mut jumps = 0usize;
+    let mut wire_length = 0usize;
+    let mut labels = Vec::new();
+
+    loop {
+        let length = *message.get(cursor)?;
+        if length & 0xc0 == 0xc0 {
+            let second = *message.get(cursor + 1)?;
+            let pointer = (((length & 0x3f) as usize) << 8) | second as usize;
+            if pointer >= message.len() {
+                return None;
+            }
+            if !jumped {
+                consumed_end = Some(cursor + 2);
+            }
+            jumped = true;
+            jumps += 1;
+            if jumps > 16 {
+                return None;
+            }
+            cursor = pointer;
+            continue;
+        }
+        if length & 0xc0 != 0 {
+            return None;
+        }
+        cursor += 1;
+        if length == 0 {
+            if !jumped {
+                consumed_end = Some(cursor);
+            }
+            break;
+        }
+
+        let label_length = length as usize;
+        if label_length > 63 || labels.len() >= 127 {
+            return None;
+        }
+        let end = cursor.checked_add(label_length)?;
+        let label_bytes = message.get(cursor..end)?;
+        let label = std::str::from_utf8(label_bytes).ok()?;
+        if !label.is_ascii() {
+            return None;
+        }
+        wire_length = wire_length.checked_add(label_length + 1)?;
+        if wire_length > 253 {
+            return None;
+        }
+        labels.push(label.to_ascii_lowercase());
+        cursor = end;
+    }
+
+    let end = consumed_end?;
+    if end.checked_add(4)? > message.len() || labels.is_empty() {
+        return None;
+    }
+    Some(labels.join("."))
 }
 
 fn ethernet_payload(frame: &[u8]) -> Option<(u16, &[u8])> {
