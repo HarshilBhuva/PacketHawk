@@ -16,6 +16,7 @@ fn packet(timestamp_ns: u128) -> NormalizedPacket {
         protocol: TransportProtocol::Tcp,
         packet_size: 90,
         tcp_flags: Some(0x10),
+        dns_query_name: None,
     }
 }
 
