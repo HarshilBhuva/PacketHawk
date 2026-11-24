@@ -56,11 +56,8 @@ fn parses_custom_configuration() {
     let directory = tempfile::tempdir().expect("temporary directory");
     let path = directory.path().join("custom.toml");
 
-    fs::write(
-        &path,
-        "[detection]\nport_scan_unique_ports = 25\n",
-    )
-    .expect("write configuration");
+    fs::write(&path, "[detection]\nport_scan_unique_ports = 25\n")
+        .expect("write configuration");
 
     let config = AppConfig::load(path).expect("custom configuration should load");
     assert_eq!(config.detection.port_scan_unique_ports, 25);
