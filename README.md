@@ -49,12 +49,22 @@ cargo run -- capture detect sample.pcap
 cargo run -- capture detect sample.pcap --config config/default.toml --json
 ```
 
+## Performance benchmarks
+
+PacketHawk includes Criterion benchmarks for PCAP ingestion, flow aggregation, and the detection engine. They use deterministic synthetic data and are intended for before/after comparisons, not universal performance claims.
+
+```bash
+cargo bench --bench ingestion
+cargo bench --bench analysis
+```
+
 ## Development checks
 
 ```bash
 cargo fmt --all -- --check
 cargo clippy --all-targets --all-features -- -D warnings
 cargo test --all-targets
+cargo bench --no-run
 cargo build --release
 ```
 
@@ -67,8 +77,9 @@ cargo build --release
 | M2 | Bounded flow aggregation | Complete |
 | M3 | Vertical and horizontal port-scan detections | Complete |
 | M4 | Port-scan and periodic beaconing detections | Complete |
-| M5 | DNS query parsing and anomaly detection | Implemented in this branch |
-| M6 | Streaming, benchmarks, and v0.1.0 release hardening | Planned |
+| M5 | DNS query parsing and anomaly detection | Complete |
+| M6 | Reproducible ingestion and analysis benchmarks | Implemented in this branch |
+| M7 | Streaming ingestion and v0.1.0 release hardening | Planned |
 
 ## Detection interpretation
 
