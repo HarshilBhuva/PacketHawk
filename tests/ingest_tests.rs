@@ -71,6 +71,49 @@ fn pcapng_fixture(frame: &[u8]) -> Vec<u8> {
     bytes
 }
 
+
+fn ethernet_ipv4_udp_dns(query: &str) -> Vec<u8> {
+    let mut dns = vec![0u8; 12];
+    dns[0..2].copy_from_slice(&0x1234u16.to_be_bytes());
+    dns[4..6].copy_from_slice(&1u16.to_be_bytes());
+    for label in query.split('.') {
+        dns.push(label.len() as u8);
+        dns.extend_from_slice(label.as_bytes());
+    }
+    dns.push(0);
+    dns.extend_from_slice(&1u16.to_be_bytes());
+    dns.extend_from_slice(&1u16.to_be_bytes());
+
+    let udp_len = 8 + dns.len();
+    let ip_len = 20 + udp_len;
+    let mut frame = vec![0u8; 14 + ip_len];
+    frame[12..14].copy_from_slice(&0x0800u16.to_be_bytes());
+    let ip = &mut frame[14..34];
+    ip[0] = 0x45;
+    ip[2..4].copy_from_slice(&(ip_len as u16).to_be_bytes());
+    ip[8] = 64;
+    ip[9] = 17;
+    ip[12..16].copy_from_slice(&[192, 0, 2, 10]);
+    ip[16..20].copy_from_slice(&[192, 0, 2, 53]);
+    let udp = &mut frame[34..42];
+    udp[0..2].copy_from_slice(&53000u16.to_be_bytes());
+    udp[2..4].copy_from_slice(&53u16.to_be_bytes());
+    udp[4..6].copy_from_slice(&(udp_len as u16).to_be_bytes());
+    frame[42..].copy_from_slice(&dns);
+    frame
+}
+
+#[test]
+fn extracts_dns_question_name_from_udp_query() {
+    let capture = pcap_fixture(&ethernet_ipv4_udp_dns("Sub.Domain.Example"));
+    let report = CaptureReader::read(Cursor::new(capture)).unwrap();
+    assert_eq!(report.packets.len(), 1);
+    assert_eq!(
+        report.packets[0].dns_query_name.as_deref(),
+        Some("sub.domain.example")
+    );
+}
+
 #[test]
 fn reads_classic_pcap_and_normalizes_tcp_metadata() {
     let report = CaptureReader::read(Cursor::new(pcap_fixture(&ethernet_ipv4_tcp()))).unwrap();
