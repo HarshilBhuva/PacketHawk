@@ -63,7 +63,11 @@ impl DnsAnomalyDetector {
             } else {
                 Severity::Medium
             };
-            let confidence = if is_long && is_high_entropy { 0.85 } else { 0.7 };
+            let confidence = if is_long && is_high_entropy {
+                0.85
+            } else {
+                0.7
+            };
             alerts.push(SecurityAlert {
                 rule_id: "DNS_QUERY_ANOMALY".into(),
                 title: "Unusual DNS query name".into(),
