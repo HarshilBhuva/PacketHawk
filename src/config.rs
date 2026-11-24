@@ -3,18 +3,10 @@ use std::{fs, path::Path};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(default)]
 pub struct AppConfig {
     pub detection: DetectionConfig,
-}
-
-impl Default for AppConfig {
-    fn default() -> Self {
-        Self {
-            detection: DetectionConfig::default(),
-        }
-    }
 }
 
 impl AppConfig {
