@@ -1,29 +1,22 @@
 # Detection Rules
 
-This document defines the intended first-release heuristics. Thresholds are starting defaults and must remain configurable.
-
 ## PORT_SCAN_VERTICAL
 
-One source contacts an unusually large number of distinct destination ports on one destination host within a configured time window.
-
-Evidence should include source and destination addresses, observed destination ports, time window, threshold, and packet/flow references.
+Detects one source contacting multiple unique destination ports on one destination host within the configured time window. Evidence includes source and destination IPs, unique port count, threshold, window duration, and a bounded sample of observed ports.
 
 ## PORT_SCAN_HORIZONTAL
 
-One source contacts the same destination service port across an unusually large number of destination hosts within a configured time window.
+Detects one source contacting the same destination service port across multiple unique destination hosts within the configured time window. Evidence includes source IP, destination port, unique host count, threshold, window duration, and a bounded host sample.
 
-Evidence should include source address, destination port, unique destination hosts, time window, and threshold.
+## State and reliability
 
-## DNS_QUERY_ANOMALY
+- Only TCP/UDP packets with decoded source and destination ports are considered.
+- A maximum-timestamp watermark prevents out-of-order timestamps from moving the window backwards; packets arriving outside the current window are ignored.
+- Each tracker retains at most 4,096 unique targets.
+- Total tracker count is bounded by the caller-provided capacity; the least-recently-updated tracker is evicted when full.
+- A rule alerts once per threshold crossing and can alert again after its target set expires.
+- DNS anomaly and beaconing rules are not implemented yet.
 
-A source generates DNS query names that exceed configured length or entropy heuristics. Long or high-entropy names can occur in legitimate applications, CDNs, and tracking systems; the rule must not label a domain malicious solely on this basis.
+## Interpretation
 
-## NETWORK_BEACONING
-
-A source repeatedly contacts the same destination with sufficiently regular inter-arrival intervals and enough observations to reduce noise.
-
-The first implementation should calculate interval mean, standard deviation, and coefficient of variation. It must account for missing observations and timestamp precision.
-
-## Alert quality
-
-Every alert must identify the rule, severity, observed values, threshold, observation window, confidence rationale, and supporting evidence. Heuristic findings are investigative leads, not proof of compromise.
+These heuristics are investigative indicators, not proof of malicious activity. Vulnerability scanners, service discovery, inventory agents, and monitoring systems can produce similar patterns. Tune thresholds to local traffic baselines.
