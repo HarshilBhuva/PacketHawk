@@ -65,4 +65,4 @@ Terminal / JSON Reports
 
 ## Current implementation status
 
-M0 foundation, M1 offline capture ingestion, M2 bounded flow aggregation, and the port-scan, DNS, and beaconing detection rules are implemented. M7 streams classic-PCAP flow ingestion and M8 streams PCAPNG blocks into the same bounded flow aggregator. Detection remains slice-based and is the next streaming target.
+M0-M9 are implemented: offline PCAP/PCAPNG parsing, bounded flow aggregation, port-scan/beacon/DNS heuristics, reproducible benchmarks, streaming capture traversal, and bounded streaming detection. The CLI's flow and detect commands consume packets incrementally; detection drops late timestamps and reports state evictions.
