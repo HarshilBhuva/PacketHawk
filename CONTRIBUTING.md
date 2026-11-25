@@ -35,7 +35,6 @@ Keep pull requests focused. Prefer small changes that can be reviewed and valida
 
 ## Release changes
 
-- Update `CHANGELOG.md` for user-visible behavior.
-- Keep release versions and user-visible changes documented in `CHANGELOG.md`.
+- Update `CHANGELOG.md` for user-visible behavior and release versions.
 - Commit and review `Cargo.lock` before any reproducible release build.
 - Keep the documented parser coverage, timestamp-ordering policy, and detector state limits synchronized with implementation.
