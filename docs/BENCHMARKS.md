@@ -50,3 +50,20 @@ Two runs on the same hosted runner image and Rust toolchain produced the followi
 - The workflow now prints CPU model, logical core count, OS, and Cargo/Rust versions for each benchmark run.
 
 The flow aggregation spread between these two runs is large enough to demonstrate why these figures are **observations, not a release performance baseline**. The benchmark workflow now records CPU model and core information to improve future comparisons. Use a controlled, repeatable machine for release claims.
+
+### Run C — environment captured
+
+[Run C](https://github.com/HarshilBhuva/PacketHawk/actions/runs/45534783786) recorded the following environment:
+
+- Ubuntu 26.04 hosted image.
+- Rust/Cargo 1.100.0.
+- AMD EPYC 9V45 96-Core Processor allocation; 2 cores, 4 logical CPUs.
+- Criterion: 100 samples per benchmark.
+
+| Benchmark | Estimate | Reported interval |
+|---|---:|---:|
+| PCAP ingestion, 20k packets | 1.4290 ms | 1.4264–1.4316 ms |
+| Flow aggregation, 10k packets | 3.3235 ms | 3.2671–3.3843 ms |
+| Batch detection, 10k packets | 3.0735 ms | 3.0692–3.0777 ms |
+
+The hosted runner's observed numbers vary materially between runs even with the same OS image and compiler. These measurements document the benchmark harness and current order of magnitude; they are not suitable for cross-machine comparisons or a release throughput claim.
