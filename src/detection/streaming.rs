@@ -132,14 +132,16 @@ impl PortScanStream {
                 && state.emitted_vertical.insert(event.destination)
             {
                 let observed: std::collections::BTreeSet<_> = ports.keys().copied().collect();
-                let severity = if observed.len()
-                    >= self.config.port_scan_unique_ports.saturating_mul(2)
-                {
+                let severity =
+                    if observed.len() >= self.config.port_scan_unique_ports.saturating_mul(2) {
                     Severity::High
                 } else {
                     Severity::Medium
                 };
-                let first_seen = state.events.front().map_or(packet.timestamp_ns, |item| item.timestamp_ns);
+                let first_seen = state
+                    .events
+                    .front()
+                    .map_or(packet.timestamp_ns, |item| item.timestamp_ns);
                 self.alerts.push(SecurityAlert {
                     rule_id: "PORT_SCAN_VERTICAL".into(),
                     title: format!("Vertical port scan against {}", event.destination),
@@ -151,7 +153,10 @@ impl PortScanStream {
                         format!("Observed {} unique destination ports", observed.len()),
                         format!("Destination ports: {}", join_ports(&observed)),
                         format!("Window: {} seconds", self.config.scan_window_secs),
-                        format!("Configured threshold: {} unique ports", self.config.port_scan_unique_ports),
+                        format!(
+                            "Configured threshold: {} unique ports",
+                            self.config.port_scan_unique_ports
+                        ),
                         format!("Capture window: {first_seen}..={} ns", packet.timestamp_ns),
                     ],
                 });
@@ -177,13 +182,19 @@ impl PortScanStream {
                     severity,
                     source_ip: Some(source),
                     destination_ip: None,
-                    confidence: confidence(observed.len(), self.config.horizontal_scan_unique_hosts),
+                    confidence: confidence(
+                        observed.len(),
+                        self.config.horizontal_scan_unique_hosts,
+                    ),
                     evidence: vec![
                         format!("Observed {} unique destination hosts", observed.len()),
                         format!("Destination port: {port}"),
                         format!("Destination hosts: {}", join_hosts(&observed)),
                         format!("Window: {} seconds", self.config.scan_window_secs),
-                        format!("Configured threshold: {} unique hosts", self.config.horizontal_scan_unique_hosts),
+                        format!(
+                            "Configured threshold: {} unique hosts",
+                            self.config.horizontal_scan_unique_hosts
+                        ),
                         format!("Capture window: {first_seen}..={} ns", packet.timestamp_ns),
                     ],
                 });
@@ -198,8 +209,16 @@ impl PortScanStream {
                 watermark_ns.saturating_sub(event.timestamp_ns) > self.window_ns
             }) {
                 if let Some(event) = state.events.pop_front() {
-                    decrement(&mut state.vertical, &event.destination, &event.destination_port);
-                    decrement(&mut state.horizontal, &event.destination_port, &event.destination);
+                    decrement(
+                        &mut state.vertical,
+                        &event.destination,
+                        &event.destination_port,
+                    );
+                    decrement(
+                        &mut state.horizontal,
+                        &event.destination_port,
+                        &event.destination,
+                    );
                     expired_count += 1;
                 }
             }
@@ -280,11 +299,19 @@ fn confidence(observed: usize, threshold: usize) -> f32 {
 }
 
 fn join_ports(ports: &std::collections::BTreeSet<u16>) -> String {
-    ports.iter().map(u16::to_string).collect::<Vec<_>>().join(", ")
+    ports
+        .iter()
+        .map(u16::to_string)
+        .collect::<Vec<_>>()
+        .join(", ")
 }
 
 fn join_hosts(hosts: &std::collections::BTreeSet<IpAddr>) -> String {
-    hosts.iter().map(ToString::to_string).collect::<Vec<_>>().join(", ")
+    hosts
+        .iter()
+        .map(ToString::to_string)
+        .collect::<Vec<_>>()
+        .join(", ")
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -325,7 +352,10 @@ impl BeaconStream {
     }
 
     fn observe(&mut self, packet: &NormalizedPacket) {
-        if !matches!(packet.protocol, TransportProtocol::Tcp | TransportProtocol::Udp) {
+        if !matches!(
+            packet.protocol,
+            TransportProtocol::Tcp | TransportProtocol::Udp
+        ) {
             return;
         }
         let Some(destination_port) = packet.destination_port else {
@@ -397,9 +427,7 @@ impl BeaconStream {
             if coefficient_of_variation > self.config.beacon_max_interval_cv {
                 continue;
             }
-            let severity = if coefficient_of_variation
-                <= self.config.beacon_max_interval_cv * 0.5
-            {
+            let severity = if coefficient_of_variation <= self.config.beacon_max_interval_cv * 0.5 {
                 Severity::High
             } else {
                 Severity::Medium
@@ -511,7 +539,11 @@ impl DnsStream {
         } else {
             Severity::Medium
         };
-        let confidence = if is_long && is_high_entropy { 0.85 } else { 0.7 };
+        let confidence = if is_long && is_high_entropy {
+            0.85
+        } else {
+            0.7
+        };
         self.alerts.push(SecurityAlert {
             rule_id: "DNS_QUERY_ANOMALY".into(),
             title: "Unusual DNS query name".into(),
@@ -592,8 +624,7 @@ impl StreamingDetectionEngine {
             .watermark_ns
             .is_some_and(|watermark| packet.timestamp_ns < watermark)
         {
-            self.stats.late_packets_ignored =
-                self.stats.late_packets_ignored.saturating_add(1);
+            self.stats.late_packets_ignored = self.stats.late_packets_ignored.saturating_add(1);
             return;
         }
         self.watermark_ns = Some(packet.timestamp_ns);
