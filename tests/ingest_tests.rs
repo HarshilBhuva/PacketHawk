@@ -226,7 +226,7 @@ fn streaming_visitor_preserves_pcapng_compatibility() {
         "packethawk-streaming-{}.pcapng",
         std::process::id()
     ));
-    std::fs::write(&path, capture).unwrap();
+    std::fs::write(&path, &capture).unwrap();
 
     let buffered = CaptureReader::read(Cursor::new(capture.clone())).unwrap();
     let mut visited = Vec::new();
