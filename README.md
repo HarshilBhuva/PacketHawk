@@ -19,7 +19,7 @@ PacketHawk analyzes saved captures through a bounded ingestion, decoding, flow, 
 ## Current capabilities
 
 - Read classic PCAP and PCAPNG captures.
-- Stream classic-PCAP records one at a time into flow aggregation without retaining the full decoded packet list; PCAPNG currently uses the compatibility buffered path.
+- Stream classic-PCAP records and PCAPNG blocks incrementally into flow aggregation without retaining the full decoded packet list.
 - Enforce a 16 MiB per-packet record cap in addition to the 512 MiB capture-file cap.
 - Decode supported Ethernet, VLAN, Linux cooked, IPv4/IPv6, TCP/UDP/ICMP metadata.
 - Count malformed packet frames without panicking and cap input at 512 MiB.
@@ -80,9 +80,10 @@ cargo build --release
 | M3 | Vertical and horizontal port-scan detections | Complete |
 | M4 | Port-scan and periodic beaconing detections | Complete |
 | M5 | DNS query parsing and anomaly detection | Complete |
-| M6 | Reproducible ingestion and analysis benchmarks | Implemented in this branch |
-| M7 | Streaming classic-PCAP flow ingestion | Implemented in this branch |
-| M8 | Streaming PCAPNG, detection pipeline, and v0.1.0 release hardening | Planned |
+| M6 | Reproducible ingestion and analysis benchmarks | Complete |
+| M7 | Streaming classic-PCAP flow ingestion | Complete |
+| M8 | Streaming PCAPNG flow ingestion | Implemented in this branch |
+| M9 | Streaming detection pipeline and v0.1.0 release hardening | Planned |
 
 ## Detection interpretation
 
@@ -90,7 +91,7 @@ Port-scan rules use unique destination endpoints in capture-time sliding windows
 
 A low coefficient of variation can also describe legitimate polling, monitoring, software updates, and persistent application sessions. Confidence is a heuristic score, not a calibrated probability. Alerts are investigative leads, not proof of compromise.
 
-The current capture reader materializes decoded packets before analysis. DNS anomaly rules flag long or high-entropy DNS question names. DNS over TCP, DoH, DoT, and encrypted DNS payloads remain outside current parser coverage. No live capture, packet injection, blocking, or active scanning is performed.
+The detection command still materializes decoded packets before analysis; flow aggregation streams both classic PCAP and PCAPNG records. DNS anomaly rules flag long or high-entropy DNS question names. DNS over TCP, DoH, DoT, and encrypted DNS payloads remain outside current parser coverage. No live capture, packet injection, blocking, or active scanning is performed.
 
 ## License
 

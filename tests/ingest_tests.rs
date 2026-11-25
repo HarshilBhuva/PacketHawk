@@ -179,6 +179,23 @@ fn streaming_visitor_preserves_pcapng_compatibility() {
 }
 
 #[test]
+fn streaming_visitor_rejects_corrupt_pcapng_block_trailer() {
+    let mut capture = pcapng_fixture(&ethernet_ipv4_tcp());
+    let trailer = capture.len() - 4;
+    capture[trailer..].copy_from_slice(&0u32.to_le_bytes());
+    let path = std::env::temp_dir().join(format!(
+        "packethawk-streaming-corrupt-{}.pcapng",
+        std::process::id()
+    ));
+    std::fs::write(&path, capture).unwrap();
+
+    let error = CaptureReader::visit_path(&path, |_| {}).unwrap_err();
+
+    std::fs::remove_file(&path).unwrap();
+    assert!(error.to_string().contains("block length trailer mismatch"));
+}
+
+#[test]
 fn streaming_visitor_rejects_oversized_packet_before_allocating_frame() {
     let mut capture = pcap_fixture(&ethernet_ipv4_tcp());
     let oversized = (16 * 1024 * 1024 + 1) as u32;
