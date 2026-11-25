@@ -39,7 +39,7 @@ Terminal / JSON Reports
 - `ingest`: capture-file reading, timestamps, link-layer metadata, and safe packet decoding. Classic-PCAP records and PCAPNG blocks have a visitor API that decodes packets incrementally into downstream consumers.
 - `models`: parser-independent packet, flow, and alert types.
 - `flow`: flow identity, bidirectional/directional aggregation, counters, expiry, and eviction.
-- `detection`: independent, configurable detection rules (next milestone).
+- `detection`: configurable, evidence-backed port-scan, beaconing, and DNS anomaly rules.
 - `config`: validated user configuration.
 - `cli`: command-line interface and application orchestration.
 
@@ -56,7 +56,7 @@ Terminal / JSON Reports
 ## Resource and reliability requirements
 
 - Treat all capture contents as untrusted input.
-- Bound capture input to 512 MiB, individual packet records to 16 MiB, and active flow state.
+- Bound capture input to 512 MiB, individual packet records to 16 MiB, PCAPNG blocks to 16 MiB + 4 KiB, and active flow state.
 - Use a hash map for flow lookup and an ordered recency index for expiry/eviction.
 - Expire flows using a maximum observed timestamp watermark so out-of-order timestamps do not move recency backwards.
 - Evict the least-recently-seen flow when the configured active-flow capacity is reached.

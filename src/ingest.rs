@@ -61,7 +61,7 @@ impl CaptureReader {
         Self::read(file)
     }
 
-    /// Visit decoded packets without retaining the complete classic-PCAP packet list.
+    /// Visit decoded packets without retaining the complete capture packet list.
     ///
     /// Classic PCAP records and PCAPNG blocks are read and decoded incrementally.
     /// Only the current packet frame or PCAPNG block is retained by the reader.
