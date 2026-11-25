@@ -39,3 +39,10 @@ jobs:
 
       - name: Build release binary
         run: cargo build --release
+
+      - name: Smoke-test release binary
+        run: |
+          set -euo pipefail
+          ./target/release/packethawk --version
+          ./target/release/packethawk --help >/dev/null
+          ./target/release/packethawk config check config/default.toml

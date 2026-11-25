@@ -4,7 +4,7 @@
 
 PacketHawk inspects PCAP/PCAPNG captures, normalizes packet metadata, reconstructs network flows, identifies suspicious traffic patterns, and produces evidence-backed security alerts.
 
-> **Development status:** M4 adds periodic-traffic beaconing heuristics alongside vertical and horizontal port-scan detection.
+> **Release target:** `0.1.0` — offline PCAP/PCAPNG analysis with bounded streaming ingestion, flow aggregation, and evidence-backed detections.
 
 ## How PacketHawk works
 
@@ -84,8 +84,8 @@ cargo build --release
 | M6 | Reproducible ingestion and analysis benchmarks | Complete |
 | M7 | Streaming classic-PCAP flow ingestion | Complete |
 | M8 | Streaming PCAPNG flow ingestion | Complete |
-| M9 | Streaming detection pipeline and bounded detector state | Implemented in this branch |
-| M10 | v0.1.0 release hardening | Planned |
+| M9 | Streaming detection pipeline and bounded detector state | Complete |
+| M10 | v0.1.0 release hardening | Implemented in this branch |
 
 ## Detection interpretation
 
@@ -94,6 +94,10 @@ Port-scan rules use unique destination endpoints in capture-time sliding windows
 A low coefficient of variation can also describe legitimate polling, monitoring, software updates, and persistent application sessions. Confidence is a heuristic score, not a calibrated probability. Alerts are investigative leads, not proof of compromise.
 
 The flow and detection commands stream both classic PCAP and PCAPNG records. The detection engine ignores packets older than its maximum timestamp watermark and reports bounded-state evictions. DNS anomaly rules flag long or high-entropy DNS question names. DNS over TCP, DoH, DoT, and encrypted DNS payloads remain outside current parser coverage. No live capture, packet injection, blocking, or active scanning is performed.
+
+## Security and release status
+
+PacketHawk is an early-stage defensive analysis tool. Review [SECURITY.md](SECURITY.md) before reporting vulnerabilities and [the release checklist](docs/RELEASE_CHECKLIST.md) for current v0.1.0 release gates. No stable release has been published yet.
 
 ## License
 

@@ -14,7 +14,10 @@ Run all checks from the repository root:
 cargo fmt --all
 cargo clippy --all-targets --all-features -- -D warnings
 cargo test --all-targets
+cargo bench --no-run
 cargo build --release
+./target/release/packethawk --version
+./target/release/packethawk config check config/default.toml
 ```
 
 ## Engineering expectations
@@ -27,3 +30,10 @@ cargo build --release
 - Do not claim performance improvements without reproducible benchmarks.
 
 Keep pull requests focused. Prefer small changes that can be reviewed and validated independently.
+
+## Release changes
+
+- Update `CHANGELOG.md` for user-visible behavior.
+- Do not create a version tag until every item in `docs/RELEASE_CHECKLIST.md` is satisfied.
+- Commit and review `Cargo.lock` before any reproducible release build.
+- Keep the documented parser coverage, timestamp-ordering policy, and detector state limits synchronized with implementation.
