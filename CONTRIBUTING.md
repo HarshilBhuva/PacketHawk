@@ -12,10 +12,10 @@ Run all checks from the repository root:
 
 ```bash
 cargo fmt --all
-cargo clippy --all-targets --all-features -- -D warnings
-cargo test --all-targets
-cargo bench --no-run
-cargo build --release
+cargo clippy --locked --all-targets --all-features -- -D warnings
+cargo test --locked --all-targets
+cargo bench --locked --no-run
+cargo build --locked --release
 ./target/release/packethawk --version
 ./target/release/packethawk config check config/default.toml
 ```
