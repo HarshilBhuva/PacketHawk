@@ -19,6 +19,8 @@ PacketHawk analyzes saved captures through a bounded ingestion, decoding, flow, 
 ## Current capabilities
 
 - Read classic PCAP and PCAPNG captures.
+- Stream classic-PCAP records one at a time into flow aggregation without retaining the full decoded packet list; PCAPNG currently uses the compatibility buffered path.
+- Enforce a 16 MiB per-packet record cap in addition to the 512 MiB capture-file cap.
 - Decode supported Ethernet, VLAN, Linux cooked, IPv4/IPv6, TCP/UDP/ICMP metadata.
 - Count malformed packet frames without panicking and cap input at 512 MiB.
 - Aggregate bounded directional or bidirectional five-tuple flows.
@@ -79,7 +81,8 @@ cargo build --release
 | M4 | Port-scan and periodic beaconing detections | Complete |
 | M5 | DNS query parsing and anomaly detection | Complete |
 | M6 | Reproducible ingestion and analysis benchmarks | Implemented in this branch |
-| M7 | Streaming ingestion and v0.1.0 release hardening | Planned |
+| M7 | Streaming classic-PCAP flow ingestion | Implemented in this branch |
+| M8 | Streaming PCAPNG, detection pipeline, and v0.1.0 release hardening | Planned |
 
 ## Detection interpretation
 

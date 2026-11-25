@@ -127,6 +127,90 @@ fn reads_classic_pcap_and_normalizes_tcp_metadata() {
 }
 
 #[test]
+fn streaming_visitor_matches_buffered_classic_pcap_results() {
+    let capture = pcap_fixture(&ethernet_ipv4_tcp());
+    let path =
+        std::env::temp_dir().join(format!("packethawk-streaming-{}.pcap", std::process::id()));
+    std::fs::write(&path, &capture).unwrap();
+
+    let buffered = CaptureReader::read(Cursor::new(capture)).unwrap();
+    let mut visited = Vec::new();
+    let stats = CaptureReader::visit_path(&path, |packet| visited.push(packet)).unwrap();
+
+    std::fs::remove_file(&path).unwrap();
+    assert_eq!(visited, buffered.packets);
+    assert_eq!(stats.decoded_packets, buffered.packets.len());
+    assert_eq!(stats.skipped_packets, buffered.skipped_packets);
+}
+
+#[test]
+fn streaming_visitor_counts_malformed_frames_without_panicking() {
+    let capture = pcap_fixture(&[0u8; 8]);
+    let path = std::env::temp_dir().join(format!(
+        "packethawk-streaming-malformed-{}.pcap",
+        std::process::id()
+    ));
+    std::fs::write(&path, capture).unwrap();
+
+    let stats = CaptureReader::visit_path(&path, |_| {}).unwrap();
+
+    std::fs::remove_file(&path).unwrap();
+    assert_eq!(stats.decoded_packets, 0);
+    assert_eq!(stats.skipped_packets, 1);
+}
+
+#[test]
+fn streaming_visitor_preserves_pcapng_compatibility() {
+    let capture = pcapng_fixture(&ethernet_ipv4_tcp());
+    let path = std::env::temp_dir().join(format!(
+        "packethawk-streaming-{}.pcapng",
+        std::process::id()
+    ));
+    std::fs::write(&path, capture).unwrap();
+
+    let mut visited = Vec::new();
+    let stats = CaptureReader::visit_path(&path, |packet| visited.push(packet)).unwrap();
+
+    std::fs::remove_file(&path).unwrap();
+    assert_eq!(stats.decoded_packets, 1);
+    assert_eq!(stats.skipped_packets, 0);
+    assert_eq!(visited[0].timestamp_ns, 1_500_000_000);
+    assert_eq!(visited[0].destination_port, Some(443));
+}
+
+#[test]
+fn streaming_visitor_rejects_oversized_packet_before_allocating_frame() {
+    let mut capture = pcap_fixture(&ethernet_ipv4_tcp());
+    let oversized = (16 * 1024 * 1024 + 1) as u32;
+    capture[32..36].copy_from_slice(&oversized.to_le_bytes());
+    capture[36..40].copy_from_slice(&oversized.to_le_bytes());
+    let path = std::env::temp_dir().join(format!(
+        "packethawk-streaming-oversized-{}.pcap",
+        std::process::id()
+    ));
+    std::fs::write(&path, capture).unwrap();
+
+    let error = CaptureReader::visit_path(&path, |_| {}).unwrap_err();
+
+    std::fs::remove_file(&path).unwrap();
+    assert!(error.to_string().contains("packet record exceeds"));
+}
+
+#[test]
+fn streaming_visitor_rejects_truncated_global_header() {
+    let path = std::env::temp_dir().join(format!(
+        "packethawk-streaming-truncated-{}.pcap",
+        std::process::id()
+    ));
+    std::fs::write(&path, [0xd4, 0xc3, 0xb2, 0xa1]).unwrap();
+
+    let error = CaptureReader::visit_path(&path, |_| {}).unwrap_err();
+
+    std::fs::remove_file(&path).unwrap();
+    assert!(error.to_string().contains("truncated PCAP global header"));
+}
+
+#[test]
 fn reads_pcapng_enhanced_packet_block() {
     let report = CaptureReader::read(Cursor::new(pcapng_fixture(&ethernet_ipv4_tcp()))).unwrap();
     assert_eq!(report.packets.len(), 1);

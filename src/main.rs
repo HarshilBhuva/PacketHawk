@@ -105,7 +105,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     directional,
                 },
         }) => {
-            let capture = CaptureReader::read_path(&path)?;
             let config = FlowConfig {
                 max_active_flows,
                 idle_timeout_ns: (idle_timeout_secs as u128).saturating_mul(1_000_000_000),
@@ -116,9 +115,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 },
             };
             let mut aggregator = FlowAggregator::new(config)?;
-            for packet in &capture.packets {
-                aggregator.observe(packet);
-            }
+            let capture_stats =
+                CaptureReader::visit_path(&path, |packet| aggregator.observe(&packet))?;
             let mut report = aggregator.report();
 
             if json {
@@ -126,6 +124,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             } else {
                 println!("Capture: {}", path.display());
                 println!("Packets aggregated: {}", report.stats.packets_seen);
+                println!("Skipped packet frames: {}", capture_stats.skipped_packets);
                 println!("Active flows: {}", report.stats.active_flows);
                 println!("Flows expired: {}", report.stats.flows_expired);
                 println!("Flows evicted: {}", report.stats.flows_evicted);
