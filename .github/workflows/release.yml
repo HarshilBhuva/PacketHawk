@@ -28,29 +28,51 @@ jobs:
             exit 1
           }
 
+      - name: Validate tagged source
+        run: |
+          set -euo pipefail
+          cargo fmt --all -- --check
+          cargo test --locked --all-targets
+          cargo clippy --locked --all-targets --all-features -- -D warnings
+
       - name: Audit dependencies
         run: |
           cargo install cargo-audit --version 0.23.0 --locked
           cargo audit --deny warnings
 
-      - name: Build reproducibly
+      - name: Build release binary
         run: cargo build --release --locked
 
-      - name: Smoke-test release binary
-        run: |
-          set -euo pipefail
-          ./target/release/packethawk --version
-          ./target/release/packethawk --help >/dev/null
-          ./target/release/packethawk config check config/default.toml
-
-      - name: Package and checksum
+      - name: Stage portable release bundle
         env:
           RELEASE_TAG: ${{ github.ref_name }}
         run: |
           set -euo pipefail
-          mkdir -p dist
-          tar -czf "dist/packethawk-${RELEASE_TAG}-linux-x86_64.tar.gz" -C target/release packethawk
-          (cd dist && sha256sum *.tar.gz > SHA256SUMS.txt)
+          PACKAGE_NAME="packethawk-${RELEASE_TAG}-linux-x86_64"
+          PACKAGE_DIR="dist/${PACKAGE_NAME}"
+          mkdir -p "${PACKAGE_DIR}/config"
+          install -Dm755 target/release/packethawk "${PACKAGE_DIR}/packethawk"
+          install -Dm644 README.md "${PACKAGE_DIR}/README.md"
+          install -Dm644 LICENSE "${PACKAGE_DIR}/LICENSE"
+          install -Dm644 CHANGELOG.md "${PACKAGE_DIR}/CHANGELOG.md"
+          install -Dm644 config/default.toml "${PACKAGE_DIR}/config/default.toml"
+          tar -C dist -czf "dist/${PACKAGE_NAME}.tar.gz" "${PACKAGE_NAME}"
+          (cd dist && sha256sum "${PACKAGE_NAME}.tar.gz" > SHA256SUMS.txt)
+          (cd dist && sha256sum -c SHA256SUMS.txt)
+
+      - name: Verify extracted release bundle
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          PACKAGE_NAME="packethawk-${RELEASE_TAG}-linux-x86_64"
+          VERIFY_DIR="$(mktemp -d)"
+          tar -xzf "dist/${PACKAGE_NAME}.tar.gz" -C "${VERIFY_DIR}"
+          "${VERIFY_DIR}/${PACKAGE_NAME}/packethawk" --version
+          "${VERIFY_DIR}/${PACKAGE_NAME}/packethawk" --help >/dev/null
+          "${VERIFY_DIR}/${PACKAGE_NAME}/packethawk" config check "${VERIFY_DIR}/${PACKAGE_NAME}/config/default.toml"
+          test -s "${VERIFY_DIR}/${PACKAGE_NAME}/README.md"
+          test -s "${VERIFY_DIR}/${PACKAGE_NAME}/LICENSE"
 
       - name: Publish GitHub release
         uses: softprops/action-gh-release@8a0cd651e5b2365bd640854a3fa5dfc70e4875f3 # v3.0.4
@@ -58,4 +80,5 @@ jobs:
           tag_name: ${{ github.ref_name }}
           generate_release_notes: true
           files: |
-            dist/*
+            dist/*.tar.gz
+            dist/SHA256SUMS.txt
