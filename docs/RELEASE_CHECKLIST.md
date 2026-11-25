@@ -1,6 +1,6 @@
 # v0.1.0 Release Checklist
 
-This checklist is a release gate, not a statement that v0.1.0 is already published.
+This checklist records the completed v0.1.0 release gates and remaining post-publication verification.
 
 ## Repository and dependency gates
 
@@ -29,15 +29,16 @@ This checklist is a release gate, not a statement that v0.1.0 is already publish
 - [x] Review `SECURITY.md`, `README.md`, protocol coverage, and heuristic limitations.
 - [x] Verify documented CLI examples against the binary through integration tests.
 - [x] Build and checksum a non-release Linux x86_64 candidate artifact in CI; verify its checksum in the job.
-- [ ] Build the final release archive from the tagged commit with the committed lockfile.
-- [ ] Download the published archive and independently verify its SHA-256 checksum.
-- [ ] Create the `v0.1.0` tag only after the main-branch CI and release-readiness PR are green.
+- [x] Create the `v0.1.0` tag at the verified main-branch commit after CI passed.
+- [x] Build the final release archive from the tagged commit with the committed lockfile.
+- [x] Verify the archive checksum and extracted bundle in the release workflow before publication.
+- [ ] Independently download the published archive and verify its SHA-256 checksum outside the release workflow.
 
-## Current release blockers
+## Post-publication verification
 
-- The tagged release archive has not yet been built or published.
-- The published archive checksum has not yet been independently verified.
-- The `v0.1.0` tag has not been created.
+- The `v0.1.0` GitHub Release is published with the Linux x86_64 archive and `SHA256SUMS.txt`.
+- The release workflow verified the archive checksum, extracted bundle, and CLI smoke tests before publishing.
+- Independent download-and-checksum verification remains a separate recommended verification step.
 
 ## Release interpretation
 
