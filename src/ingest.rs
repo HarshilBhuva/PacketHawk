@@ -78,9 +78,6 @@ impl CaptureReader {
             }
         })?;
 
-        if magic == [0x0a, 0x0d, 0x0a, 0x0a] {
-            return Err(CaptureError::UnknownFormat);
-        }
         if magic == [0x0a, 0x0d, 0x0d, 0x0a] {
             let report = Self::read_path(path)?;
             let stats = CaptureStats {

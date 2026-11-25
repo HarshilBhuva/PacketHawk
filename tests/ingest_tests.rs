@@ -160,6 +160,39 @@ fn streaming_visitor_counts_malformed_frames_without_panicking() {
 }
 
 #[test]
+fn streaming_visitor_preserves_pcapng_compatibility() {
+    let capture = pcapng_fixture(&ethernet_ipv4_tcp());
+    let path = std::env::temp_dir().join(format!(
+        "packethawk-streaming-{}.pcapng",
+        std::process::id()
+    ));
+    std::fs::write(&path, capture).unwrap();
+
+    let mut visited = Vec::new();
+    let stats = CaptureReader::visit_path(&path, |packet| visited.push(packet)).unwrap();
+
+    std::fs::remove_file(&path).unwrap();
+    assert_eq!(stats.decoded_packets, 1);
+    assert_eq!(stats.skipped_packets, 0);
+    assert_eq!(visited[0].timestamp_ns, 1_500_000_000);
+    assert_eq!(visited[0].destination_port, Some(443));
+}
+
+#[test]
+fn streaming_visitor_rejects_truncated_global_header() {
+    let path = std::env::temp_dir().join(format!(
+        "packethawk-streaming-truncated-{}.pcap",
+        std::process::id()
+    ));
+    std::fs::write(&path, [0xd4, 0xc3, 0xb2, 0xa1]).unwrap();
+
+    let error = CaptureReader::visit_path(&path, |_| {}).unwrap_err();
+
+    std::fs::remove_file(&path).unwrap();
+    assert!(error.to_string().contains("truncated PCAP global header"));
+}
+
+#[test]
 fn reads_pcapng_enhanced_packet_block() {
     let report = CaptureReader::read(Cursor::new(pcapng_fixture(&ethernet_ipv4_tcp()))).unwrap();
     assert_eq!(report.packets.len(), 1);
