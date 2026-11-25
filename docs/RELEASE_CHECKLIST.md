@@ -4,7 +4,7 @@ This checklist is a release gate, not a statement that v0.1.0 is ready.
 
 ## Repository and dependency gates
 
-- [ ] Generate and commit `Cargo.lock` using the declared Rust toolchain.
+- [x] Generate and commit `Cargo.lock` using the declared Rust toolchain.
 - [ ] Verify the lockfile is reviewed and the build passes with `cargo build --release --locked`.
 - [ ] Run a dependency vulnerability audit against the committed lockfile.
 - [ ] Review dependency licenses and update policy.
@@ -14,10 +14,10 @@ This checklist is a release gate, not a statement that v0.1.0 is ready.
 ## Functional validation
 
 - [ ] Run `cargo fmt --all -- --check`.
-- [ ] Run `cargo clippy --all-targets --all-features -- -D warnings`.
-- [ ] Run `cargo test --all-targets`.
-- [ ] Run `cargo bench --no-run`.
-- [ ] Run `cargo build --release`.
+- [ ] Run `cargo clippy --locked --all-targets --all-features -- -D warnings`.
+- [ ] Run `cargo test --locked --all-targets`.
+- [ ] Run `cargo bench --locked --no-run`.
+- [ ] Run `cargo build --locked --release`.
 - [ ] Smoke-test `packethawk --version`, `packethawk --help`, and `config check`.
 - [ ] Validate classic PCAP and PCAPNG fixtures, including malformed/truncated input.
 - [ ] Validate streaming detection with ordered timestamps, late packets, and state eviction.
@@ -34,8 +34,8 @@ This checklist is a release gate, not a statement that v0.1.0 is ready.
 
 ## Current release blockers
 
-- `Cargo.lock` is not currently committed. The release workflow intentionally refuses to publish without it.
-- A dependency vulnerability audit and a Rust 1.85 toolchain validation have not yet been recorded.
+- The committed lockfile still requires a reviewed locked release build.
+- A dependency vulnerability audit and a Rust 1.85 toolchain validation must pass before tagging.
 - No release artifact or benchmark baseline has been published.
 
 ## Release interpretation
