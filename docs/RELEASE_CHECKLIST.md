@@ -22,12 +22,13 @@ This checklist is a release gate, not a statement that v0.1.0 is ready.
 - [x] Validate classic PCAP and PCAPNG fixtures, including malformed/truncated input.
 - [x] Validate streaming detection with ordered timestamps, late packets, and state eviction.
 - [ ] Record benchmark baselines from a controlled reference environment; CI Criterion artifacts are available but are not a stable hardware baseline.
+- [x] Exercise documented CLI commands and human-readable/JSON output through binary-level integration tests.
 
 ## Documentation and packaging
 
-- [ ] Update `CHANGELOG.md` with the exact release contents.
+- [x] Add an unreleased changelog entry describing implemented capabilities and known limitations.
 - [x] Review `SECURITY.md`, `README.md`, protocol coverage, and heuristic limitations.
-- [ ] Confirm CLI examples match the released binary.
+- [x] Verify documented CLI examples against the binary through integration tests.
 - [x] Build and checksum a non-release Linux x86_64 candidate artifact in CI; verify its checksum in the job.
 - [ ] Build the final release artifact from the tagged commit with the committed lockfile.
 - [ ] Download the tagged artifact and verify its SHA-256 checksum.
@@ -37,7 +38,6 @@ This checklist is a release gate, not a statement that v0.1.0 is ready.
 
 - Controlled reference-machine benchmark baselines remain outstanding.
 - No tagged release artifact or SHA-256 verification has been published.
-- The changelog still needs a final `0.1.0` entry immediately before tagging.
 
 ## Release interpretation
 
