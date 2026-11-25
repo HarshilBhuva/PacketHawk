@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/assets/packethawk-hero.svg" width="100%" alt="PacketHawk — offline network threat analysis for PCAP and PCAPNG captures" />
+<img src="docs/assets/packethawk-hero.svg" width="680" alt="PacketHawk — offline network threat analysis for PCAP and PCAPNG captures" />
 
 <br/>
 
