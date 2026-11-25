@@ -205,7 +205,6 @@ fn visit_classic_pcap<R: Read>(
     Ok(stats)
 }
 
-
 fn read_bounded_malformed<R: Read>(
     reader: &mut R,
     buffer: &mut [u8],
