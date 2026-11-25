@@ -7,7 +7,7 @@ This checklist is a release gate, not a statement that v0.1.0 is ready.
 - [x] Generate and commit `Cargo.lock` using the declared Rust toolchain.
 - [x] Verify the lockfile is reviewed and the build passes with `cargo build --release --locked`.
 - [x] Run a dependency vulnerability audit against the committed lockfile (cargo-audit 0.23.0; no advisories reported for 99 dependencies on 2026-11-25).
-- [ ] Review dependency licenses and update policy.
+- [ ] Review dependency licenses and update policy using `cargo deny check licenses bans sources`.
 - [x] Confirm `rust-version = "1.85"` against an actual Rust 1.85.0 toolchain build.
 - [ ] Review GitHub Actions permissions and pin/update third-party actions deliberately.
 
@@ -21,7 +21,7 @@ This checklist is a release gate, not a statement that v0.1.0 is ready.
 - [x] Smoke-test `packethawk --version`, `packethawk --help`, and `config check`.
 - [x] Validate classic PCAP and PCAPNG fixtures, including malformed/truncated input.
 - [x] Validate streaming detection with ordered timestamps, late packets, and state eviction.
-- [ ] Record benchmark baselines and environment details; do not publish unsupported performance claims.
+- [ ] Record benchmark baselines from a controlled reference environment; CI Criterion artifacts are available but are not a stable hardware baseline.
 
 ## Documentation and packaging
 

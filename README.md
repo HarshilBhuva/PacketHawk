@@ -95,6 +95,10 @@ A low coefficient of variation can also describe legitimate polling, monitoring,
 
 The flow and detection commands stream both classic PCAP and PCAPNG records. The detection engine ignores packets older than its maximum timestamp watermark and reports bounded-state evictions. DNS anomaly rules flag long or high-entropy DNS question names. DNS over TCP, DoH, DoT, and encrypted DNS payloads remain outside current parser coverage. No live capture, packet injection, blocking, or active scanning is performed.
 
+## Benchmarks
+
+PacketHawk includes Criterion suites for 20,000-packet PCAP ingestion, 10,000-packet flow aggregation, and 10,000-packet detection. See [docs/BENCHMARKS.md](docs/BENCHMARKS.md) for commands and interpretation. CI stores Criterion reports as short-lived artifacts; they are not cross-machine performance guarantees.
+
 ## Security and release status
 
 PacketHawk is an early-stage defensive analysis tool. Review [SECURITY.md](SECURITY.md) before reporting vulnerabilities and [the release checklist](docs/RELEASE_CHECKLIST.md) for current v0.1.0 release gates. No stable release has been published yet.

@@ -1,24 +1,34 @@
-# Performance Benchmarks
+# PacketHawk Benchmarks
 
-## What is measured
+## Suites
 
-- **PCAP ingestion:** parse a deterministic classic-PCAP fixture containing 20,000 Ethernet/IPv4/TCP packets.
-- **Flow aggregation:** build bounded bidirectional five-tuple state from 10,000 normalized TCP packets.
-- **Detection engine:** run port-scan and beaconing analysis over the same 10,000-packet synthetic workload.
+| Benchmark | Workload |
+|---|---|
+| `pcap_ingestion_20k_packets` | Parse a synthetic classic-PCAP capture containing 20,000 Ethernet/IPv4/TCP frames |
+| `packet_analysis_10k/flow_aggregation/10k` | Aggregate 10,000 normalized packets into bounded bidirectional flows |
+| `packet_analysis_10k/detection_engine/10k` | Run the batch detection engine over 10,000 normalized packets |
 
 ## Run locally
 
 ```bash
-cargo bench --bench ingestion
-cargo bench --bench analysis
+cargo bench --locked -- --noplot
 ```
 
-Criterion stores local measurements under `target/criterion`. Keep the toolchain, machine, power profile, and benchmark parameters consistent when comparing commits. Use multiple runs and compare distributions rather than relying on a single sample.
+Criterion reports are written to `target/criterion/`. To compare a local change against a named baseline:
 
-## CI policy
+```bash
+cargo bench --locked -- --save-baseline before
+# Apply the change.
+cargo bench --locked -- --baseline before
+```
 
-CI compiles all benchmark targets with `cargo bench --no-run`. It does not enforce timing thresholds because shared CI runners have noisy and variable performance. Performance claims should cite the machine, toolchain, workload size, and raw Criterion output.
+## CI artifacts
 
-## Limitations
+The CI benchmark job runs the same suites on GitHub-hosted `ubuntu-latest` runners and uploads the Criterion reports as a 14-day artifact named `packethawk-criterion-<commit-sha>`. The runner CPU, virtualization, load, and image can change; use these artifacts for regression investigation, not as a stable cross-machine performance guarantee.
 
-These are synthetic microbenchmarks. They do not represent every PCAP link type, capture size, production traffic mix, or storage device. Streaming ingestion and peak-memory measurements remain separate future work.
+## Interpretation
+
+- Compare results only when the runner image, architecture, Rust toolchain, and benchmark workload are equivalent.
+- Investigate regressions with repeated runs and profiler evidence.
+- Do not treat one noisy CI run as a release-blocking performance regression.
+- No absolute throughput target is claimed until a controlled reference environment and repeatable baseline are established.
