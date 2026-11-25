@@ -160,17 +160,26 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Some(Commands::Capture {
             command: CaptureCommands::Detect { path, config, json },
         }) => {
-            let capture = CaptureReader::read_path(&path)?;
             let settings = match config {
                 Some(path) => AppConfig::load(path)?.detection,
                 None => DetectionConfig::default(),
             };
-            let report = DetectionEngine::new(settings).analyze(&capture.packets);
+            let mut engine = DetectionEngine::new(settings).stream();
+            let capture_stats = CaptureReader::visit_path(&path, |packet| engine.observe(&packet))?;
+            let report = engine.finish();
             if json {
                 println!("{}", serde_json::to_string_pretty(&report)?);
             } else {
                 println!("Capture: {}", path.display());
-                println!("Packets analyzed: {}", capture.packets.len());
+                println!("Packets analyzed: {}", capture_stats.decoded_packets);
+                println!(
+                    "Late packets ignored: {}",
+                    report.stats.late_packets_ignored
+                );
+                println!(
+                    "Detection state evictions: {}",
+                    report.stats.state_evictions
+                );
                 println!(
                     "Vertical port-scan alerts: {}",
                     report.port_scan.stats.vertical_alerts
