@@ -138,9 +138,7 @@ fn visit_classic_pcap<R: Read>(
     let mut bytes_read = 4u64;
     read_bounded(&mut reader, &mut global_header, &mut bytes_read).map_err(
         |error| match error {
-            CaptureError::Io(ref io_error)
-                if io_error.kind() == io::ErrorKind::UnexpectedEof =>
-            {
+            CaptureError::Io(ref io_error) if io_error.kind() == io::ErrorKind::UnexpectedEof => {
                 CaptureError::Malformed("truncated PCAP global header")
             }
             other => other,
