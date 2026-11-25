@@ -3,10 +3,7 @@
 All notable changes to PacketHawk are documented here. This project follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) conventions.
 
-## [0.1.0] - Unreleased
-
-This is the planned first release. It is not published until every item in
-[the release checklist](docs/RELEASE_CHECKLIST.md) is complete.
+## [0.1.0] - 2026-11-25
 
 ### Added
 
@@ -21,7 +18,7 @@ This is the planned first release. It is not published until every item in
 - Human-readable and JSON output for capture inspection, flow summaries, and
   detection reports.
 - Criterion benchmarks, CI security/dependency policies, and checksummed
-  Linux x86_64 release-candidate packaging.
+  Linux x86_64 release packaging.
 
 ### Security
 
@@ -38,5 +35,4 @@ This is the planned first release. It is not published until every item in
 - Detection results are heuristic investigative leads, not proof of compromise
   or calibrated probabilities.
 - The current release candidate targets Linux x86_64 only.
-- A controlled reference-machine benchmark baseline and final release artifact
-  verification remain release gates.
+- The published v0.1.0 binary archive targets Linux x86_64 only.
