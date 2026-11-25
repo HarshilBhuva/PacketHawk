@@ -7,7 +7,7 @@ This checklist is a release gate, not a statement that v0.1.0 is ready.
 - [x] Generate and commit `Cargo.lock` using the declared Rust toolchain.
 - [x] Verify the lockfile is reviewed and the build passes with `cargo build --release --locked`.
 - [x] Run a dependency vulnerability audit against the committed lockfile (cargo-audit 0.23.0; no advisories reported for 99 dependencies on 2026-11-25).
-- [ ] Review dependency licenses and update policy using `cargo deny check licenses bans sources`.
+- [x] Review dependency licenses and enforce the allow-list with `cargo deny check licenses bans sources` (current graph uses Apache-2.0, MIT, Unicode-3.0, and Unlicense).
 - [x] Confirm `rust-version = "1.85"` against an actual Rust 1.85.0 toolchain build.
 - [x] Review GitHub Actions permissions and pin third-party actions to immutable commit SHAs; Dependabot tracks action updates.
 
@@ -34,7 +34,7 @@ This checklist is a release gate, not a statement that v0.1.0 is ready.
 
 ## Current release blockers
 
-- Dependency license review must pass the new cargo-deny policy job.
+- Controlled reference-machine benchmark baselines remain outstanding.
 - Benchmark baselines have not been recorded on a documented reference environment.
 - No tagged release artifact or SHA-256 verification has been published.
 - The changelog still needs a final `0.1.0` entry immediately before tagging.

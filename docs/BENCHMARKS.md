@@ -47,5 +47,6 @@ Two runs on the same hosted runner image and Rust toolchain produced the followi
 - [Run A](https://github.com/HarshilBhuva/PacketHawk/actions/runs/45534318687)
 - [Run B](https://github.com/HarshilBhuva/PacketHawk/actions/runs/45534480071)
 - Both used GitHub-hosted `ubuntu-26.04` and Rust `1.100.0`.
+- The workflow now prints CPU model, logical core count, OS, and Cargo/Rust versions for each benchmark run.
 
 The flow aggregation spread between these two runs is large enough to demonstrate why these figures are **observations, not a release performance baseline**. The benchmark workflow now records CPU model and core information to improve future comparisons. Use a controlled, repeatable machine for release claims.
