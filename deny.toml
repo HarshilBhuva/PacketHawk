@@ -1,9 +1,3 @@
-[advisories]
-vulnerability = "deny"
-unmaintained = "all"
-yanked = "deny"
-notice = "warn"
-
 [licenses]
 allow = [
   "0BSD",
