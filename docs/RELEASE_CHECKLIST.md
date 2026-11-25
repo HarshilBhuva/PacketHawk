@@ -5,22 +5,22 @@ This checklist is a release gate, not a statement that v0.1.0 is ready.
 ## Repository and dependency gates
 
 - [x] Generate and commit `Cargo.lock` using the declared Rust toolchain.
-- [ ] Verify the lockfile is reviewed and the build passes with `cargo build --release --locked`.
-- [ ] Run a dependency vulnerability audit against the committed lockfile.
+- [x] Verify the lockfile is reviewed and the build passes with `cargo build --release --locked`.
+- [x] Run a dependency vulnerability audit against the committed lockfile (cargo-audit 0.23.0; no advisories reported for 99 dependencies on 2026-11-25).
 - [ ] Review dependency licenses and update policy.
-- [ ] Confirm `rust-version = "1.85"` against an actual Rust 1.85 toolchain build.
+- [x] Confirm `rust-version = "1.85"` against an actual Rust 1.85.0 toolchain build.
 - [ ] Review GitHub Actions permissions and pin/update third-party actions deliberately.
 
 ## Functional validation
 
-- [ ] Run `cargo fmt --all -- --check`.
-- [ ] Run `cargo clippy --locked --all-targets --all-features -- -D warnings`.
-- [ ] Run `cargo test --locked --all-targets`.
-- [ ] Run `cargo bench --locked --no-run`.
-- [ ] Run `cargo build --locked --release`.
-- [ ] Smoke-test `packethawk --version`, `packethawk --help`, and `config check`.
-- [ ] Validate classic PCAP and PCAPNG fixtures, including malformed/truncated input.
-- [ ] Validate streaming detection with ordered timestamps, late packets, and state eviction.
+- [x] Run `cargo fmt --all -- --check`.
+- [x] Run `cargo clippy --locked --all-targets --all-features -- -D warnings`.
+- [x] Run `cargo test --locked --all-targets`.
+- [x] Run `cargo bench --locked --no-run`.
+- [x] Run `cargo build --locked --release`.
+- [x] Smoke-test `packethawk --version`, `packethawk --help`, and `config check`.
+- [x] Validate classic PCAP and PCAPNG fixtures, including malformed/truncated input.
+- [x] Validate streaming detection with ordered timestamps, late packets, and state eviction.
 - [ ] Record benchmark baselines and environment details; do not publish unsupported performance claims.
 
 ## Documentation and packaging
@@ -34,9 +34,10 @@ This checklist is a release gate, not a statement that v0.1.0 is ready.
 
 ## Current release blockers
 
-- The committed lockfile still requires a reviewed locked release build.
-- A dependency vulnerability audit and a Rust 1.85 toolchain validation must pass before tagging.
-- No release artifact or benchmark baseline has been published.
+- Dependency license review and third-party GitHub Actions pin/update review are still open.
+- Benchmark baselines have not been recorded on a documented reference environment.
+- No tagged release artifact or SHA-256 verification has been published.
+- The changelog still needs a final `0.1.0` entry immediately before tagging.
 
 ## Release interpretation
 
