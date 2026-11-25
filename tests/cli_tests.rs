@@ -11,10 +11,7 @@ fn run_cli(args: &[&str]) -> Output {
 }
 
 fn empty_pcap() -> Vec<u8> {
-    vec![
-        0xd4, 0xc3, 0xb2, 0xa1, 2, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0xff, 0xff, 0, 0, 1, 0, 0, 0,
-    ]
+    vec![0xd4, 0xc3, 0xb2, 0xa1, 2, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff, 0, 0, 1, 0, 0, 0]
 }
 
 fn write_empty_capture() -> (tempfile::TempDir, std::path::PathBuf) {
@@ -40,7 +37,11 @@ fn help_and_version_are_available() {
 #[test]
 fn documented_default_configuration_command_succeeds() {
     let output = run_cli(&["config", "check", "config/default.toml"]);
-    assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
     assert!(String::from_utf8_lossy(&output.stdout).contains("Configuration is valid"));
 }
 
@@ -50,13 +51,21 @@ fn inspect_supports_human_readable_and_json_output() {
     let path = path.to_str().expect("temporary path should be UTF-8");
 
     let human = run_cli(&["capture", "inspect", path]);
-    assert!(human.status.success(), "{}", String::from_utf8_lossy(&human.stderr));
+    assert!(
+        human.status.success(),
+        "{}",
+        String::from_utf8_lossy(&human.stderr)
+    );
     let stdout = String::from_utf8_lossy(&human.stdout);
     assert!(stdout.contains("Decoded packets: 0"));
     assert!(stdout.contains("Skipped packet frames: 0"));
 
     let json = run_cli(&["capture", "inspect", path, "--json"]);
-    assert!(json.status.success(), "{}", String::from_utf8_lossy(&json.stderr));
+    assert!(
+        json.status.success(),
+        "{}",
+        String::from_utf8_lossy(&json.stderr)
+    );
     let report: serde_json::Value =
         serde_json::from_slice(&json.stdout).expect("inspect JSON should be valid");
     assert_eq!(report["packets"].as_array().map(Vec::len), Some(0));
@@ -69,11 +78,19 @@ fn flow_and_detection_commands_accept_a_valid_empty_capture() {
     let path = path.to_str().expect("temporary path should be UTF-8");
 
     let flows = run_cli(&["capture", "flows", path]);
-    assert!(flows.status.success(), "{}", String::from_utf8_lossy(&flows.stderr));
+    assert!(
+        flows.status.success(),
+        "{}",
+        String::from_utf8_lossy(&flows.stderr)
+    );
     assert!(String::from_utf8_lossy(&flows.stdout).contains("Packets aggregated: 0"));
 
     let detect = run_cli(&["capture", "detect", path]);
-    assert!(detect.status.success(), "{}", String::from_utf8_lossy(&detect.stderr));
+    assert!(
+        detect.status.success(),
+        "{}",
+        String::from_utf8_lossy(&detect.stderr)
+    );
     assert!(String::from_utf8_lossy(&detect.stdout).contains("Packets analyzed: 0"));
 }
 
@@ -89,5 +106,8 @@ fn unsupported_capture_format_returns_a_nonzero_exit_code() {
         path.to_str().expect("temporary path should be UTF-8"),
     ]);
     assert!(!output.status.success());
-    assert!(String::from_utf8_lossy(&output.stderr).contains("unsupported or unrecognized capture format"));
+    assert!(
+        String::from_utf8_lossy(&output.stderr)
+            .contains("unsupported or unrecognized capture format")
+    );
 }
