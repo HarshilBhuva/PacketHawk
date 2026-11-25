@@ -38,9 +38,9 @@ PacketHawk analyzes saved captures through a bounded ingestion, decoding, flow, 
 ```bash
 git clone https://github.com/HarshilBhuva/PacketHawk.git
 cd PacketHawk
-cargo build
-cargo test
-cargo run -- --help
+cargo build --locked
+cargo test --locked
+cargo run --locked -- --help
 ```
 
 Inspect, aggregate, and detect:
@@ -57,8 +57,7 @@ cargo run -- capture detect sample.pcap --config config/default.toml --json
 PacketHawk includes Criterion benchmarks for PCAP ingestion, flow aggregation, and the detection engine. They use deterministic synthetic data and are intended for before/after comparisons, not universal performance claims. See [the benchmark guide](docs/BENCHMARKS.md) for CI artifacts and interpretation.
 
 ```bash
-cargo bench --bench ingestion
-cargo bench --bench analysis
+REPEATS=3 ./scripts/benchmark-report.sh
 ```
 
 ## Development checks
@@ -87,8 +86,8 @@ cargo build --locked --release
 | M8 | Streaming PCAPNG flow ingestion | Complete |
 | M9 | Streaming detection pipeline and bounded detector state | Complete |
 | M10 | v0.1.0 release hardening | Complete |
-| M11 | License policy, immutable action pins, CI benchmark artifacts | Implemented in this branch |
-| M12 | Controlled benchmark baseline and v0.1.0 release | Planned |
+| M11 | License policy, immutable action pins, CI benchmark artifacts | Complete |
+| M12 | Controlled benchmark baseline and v0.1.0 release | In progress |
 
 ## Detection interpretation
 

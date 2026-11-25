@@ -10,6 +10,14 @@
 
 ## Run locally
 
+For a repeatable local report with toolchain, OS, CPU, commit, and three benchmark repetitions:
+
+```bash
+REPEATS=3 ./scripts/benchmark-report.sh
+```
+
+The script writes a timestamped report under `benchmark-results/`. Increase `REPEATS` for a more stable local sample. To run a single Criterion pass manually:
+
 ```bash
 cargo bench --locked --bench ingestion -- --noplot
 cargo bench --locked --bench analysis -- --noplot
