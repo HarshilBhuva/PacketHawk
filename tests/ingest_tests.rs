@@ -129,10 +129,8 @@ fn reads_classic_pcap_and_normalizes_tcp_metadata() {
 #[test]
 fn streaming_visitor_matches_buffered_classic_pcap_results() {
     let capture = pcap_fixture(&ethernet_ipv4_tcp());
-    let path = std::env::temp_dir().join(format!(
-        "packethawk-streaming-{}.pcap",
-        std::process::id()
-    ));
+    let path =
+        std::env::temp_dir().join(format!("packethawk-streaming-{}.pcap", std::process::id()));
     std::fs::write(&path, &capture).unwrap();
 
     let buffered = CaptureReader::read(Cursor::new(capture)).unwrap();

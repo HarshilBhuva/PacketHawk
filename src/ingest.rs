@@ -110,7 +110,6 @@ impl CaptureReader {
     }
 }
 
-
 fn read_bounded<R: Read>(
     reader: &mut R,
     buffer: &mut [u8],
@@ -140,12 +139,16 @@ fn visit_classic_pcap<R: Read>(
 
     let mut global_header = [0u8; 20];
     let mut bytes_read = 4u64;
-    read_bounded(&mut reader, &mut global_header, &mut bytes_read).map_err(|error| match error {
-        CaptureError::Io(ref io_error) if io_error.kind() == io::ErrorKind::UnexpectedEof => {
-            CaptureError::Malformed("truncated PCAP global header")
-        }
-        other => other,
-    })?;
+    read_bounded(&mut reader, &mut global_header, &mut bytes_read).map_err(
+        |error| match error {
+            CaptureError::Io(ref io_error)
+                if io_error.kind() == io::ErrorKind::UnexpectedEof =>
+            {
+                CaptureError::Malformed("truncated PCAP global header")
+            }
+            other => other,
+        },
+    )?;
     let link_type = endian.u32(&global_header[16..20]);
     validate_link_type(link_type)?;
 
