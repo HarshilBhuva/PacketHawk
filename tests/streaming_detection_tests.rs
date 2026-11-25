@@ -45,12 +45,54 @@ fn config() -> DetectionConfig {
 
 fn scenario() -> Vec<NormalizedPacket> {
     let mut packets = vec![
-        packet(1, ip(10, 0, 0, 1), ip(10, 0, 0, 2), 22, TransportProtocol::Tcp, None),
-        packet(2, ip(10, 0, 0, 1), ip(10, 0, 0, 2), 80, TransportProtocol::Tcp, None),
-        packet(3, ip(10, 0, 0, 1), ip(10, 0, 0, 2), 443, TransportProtocol::Tcp, None),
-        packet(4, ip(10, 0, 0, 1), ip(10, 0, 0, 3), 8080, TransportProtocol::Tcp, None),
-        packet(5, ip(10, 0, 0, 1), ip(10, 0, 0, 4), 8080, TransportProtocol::Tcp, None),
-        packet(6, ip(10, 0, 0, 1), ip(10, 0, 0, 5), 8080, TransportProtocol::Tcp, None),
+        packet(
+            1,
+            ip(10, 0, 0, 1),
+            ip(10, 0, 0, 2),
+            22,
+            TransportProtocol::Tcp,
+            None,
+        ),
+        packet(
+            2,
+            ip(10, 0, 0, 1),
+            ip(10, 0, 0, 2),
+            80,
+            TransportProtocol::Tcp,
+            None,
+        ),
+        packet(
+            3,
+            ip(10, 0, 0, 1),
+            ip(10, 0, 0, 2),
+            443,
+            TransportProtocol::Tcp,
+            None,
+        ),
+        packet(
+            4,
+            ip(10, 0, 0, 1),
+            ip(10, 0, 0, 3),
+            8080,
+            TransportProtocol::Tcp,
+            None,
+        ),
+        packet(
+            5,
+            ip(10, 0, 0, 1),
+            ip(10, 0, 0, 4),
+            8080,
+            TransportProtocol::Tcp,
+            None,
+        ),
+        packet(
+            6,
+            ip(10, 0, 0, 1),
+            ip(10, 0, 0, 5),
+            8080,
+            TransportProtocol::Tcp,
+            None,
+        ),
     ];
     for second in 1..=4 {
         packets.push(packet(
