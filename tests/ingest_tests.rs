@@ -71,6 +71,66 @@ fn pcapng_fixture(frame: &[u8]) -> Vec<u8> {
     bytes
 }
 
+fn pcapng_big_endian_fixture(frame: &[u8]) -> Vec<u8> {
+    let mut bytes = Vec::new();
+    bytes.extend_from_slice(&[0x0a, 0x0d, 0x0d, 0x0a]);
+    bytes.extend_from_slice(&28u32.to_be_bytes());
+    bytes.extend_from_slice(&[0x1a, 0x2b, 0x3c, 0x4d]);
+    bytes.extend_from_slice(&1u16.to_be_bytes());
+    bytes.extend_from_slice(&0u16.to_be_bytes());
+    bytes.extend_from_slice(&(-1i64).to_be_bytes());
+    bytes.extend_from_slice(&28u32.to_be_bytes());
+
+    bytes.extend_from_slice(&1u32.to_be_bytes());
+    bytes.extend_from_slice(&20u32.to_be_bytes());
+    bytes.extend_from_slice(&1u16.to_be_bytes());
+    bytes.extend_from_slice(&0u16.to_be_bytes());
+    bytes.extend_from_slice(&65535u32.to_be_bytes());
+    bytes.extend_from_slice(&20u32.to_be_bytes());
+
+    let padded_len = (frame.len() + 3) & !3;
+    let block_len = 32 + padded_len;
+    bytes.extend_from_slice(&6u32.to_be_bytes());
+    bytes.extend_from_slice(&(block_len as u32).to_be_bytes());
+    bytes.extend_from_slice(&0u32.to_be_bytes());
+    bytes.extend_from_slice(&0u32.to_be_bytes());
+    bytes.extend_from_slice(&1_500_000u32.to_be_bytes());
+    bytes.extend_from_slice(&(frame.len() as u32).to_be_bytes());
+    bytes.extend_from_slice(&(frame.len() as u32).to_be_bytes());
+    bytes.extend_from_slice(frame);
+    bytes.resize(bytes.len() + padded_len - frame.len(), 0);
+    bytes.extend_from_slice(&(block_len as u32).to_be_bytes());
+    bytes
+}
+
+fn pcapng_simple_packet_fixture(frame: &[u8]) -> Vec<u8> {
+    let mut bytes = Vec::new();
+    bytes.extend_from_slice(&[0x0a, 0x0d, 0x0d, 0x0a]);
+    bytes.extend_from_slice(&28u32.to_le_bytes());
+    bytes.extend_from_slice(&[0x4d, 0x3c, 0x2b, 0x1a]);
+    bytes.extend_from_slice(&1u16.to_le_bytes());
+    bytes.extend_from_slice(&0u16.to_le_bytes());
+    bytes.extend_from_slice(&(-1i64).to_le_bytes());
+    bytes.extend_from_slice(&28u32.to_le_bytes());
+
+    bytes.extend_from_slice(&1u32.to_le_bytes());
+    bytes.extend_from_slice(&20u32.to_le_bytes());
+    bytes.extend_from_slice(&1u16.to_le_bytes());
+    bytes.extend_from_slice(&0u16.to_le_bytes());
+    bytes.extend_from_slice(&65535u32.to_le_bytes());
+    bytes.extend_from_slice(&20u32.to_le_bytes());
+
+    let padded_len = (frame.len() + 3) & !3;
+    let block_len = 16 + padded_len;
+    bytes.extend_from_slice(&3u32.to_le_bytes());
+    bytes.extend_from_slice(&(block_len as u32).to_le_bytes());
+    bytes.extend_from_slice(&(frame.len() as u32).to_le_bytes());
+    bytes.extend_from_slice(frame);
+    bytes.resize(bytes.len() + padded_len - frame.len(), 0);
+    bytes.extend_from_slice(&(block_len as u32).to_le_bytes());
+    bytes
+}
+
 fn ethernet_ipv4_udp_dns(query: &str) -> Vec<u8> {
     let mut dns = vec![0u8; 12];
     dns[0..2].copy_from_slice(&0x1234u16.to_be_bytes());
@@ -168,13 +228,51 @@ fn streaming_visitor_preserves_pcapng_compatibility() {
     ));
     std::fs::write(&path, capture).unwrap();
 
+    let buffered = CaptureReader::read(Cursor::new(capture.clone())).unwrap();
+    let mut visited = Vec::new();
+    let stats = CaptureReader::visit_path(&path, |packet| visited.push(packet)).unwrap();
+
+    std::fs::remove_file(&path).unwrap();
+    assert_eq!(visited, buffered.packets);
+    assert_eq!(stats.decoded_packets, buffered.packets.len());
+    assert_eq!(stats.skipped_packets, buffered.skipped_packets);
+    assert_eq!(visited[0].timestamp_ns, 1_500_000_000);
+    assert_eq!(visited[0].destination_port, Some(443));
+}
+
+#[test]
+fn streaming_visitor_decodes_big_endian_pcapng_sections() {
+    let capture = pcapng_big_endian_fixture(&ethernet_ipv4_tcp());
+    let path = std::env::temp_dir().join(format!(
+        "packethawk-streaming-big-endian-{}.pcapng",
+        std::process::id()
+    ));
+    std::fs::write(&path, capture).unwrap();
+
     let mut visited = Vec::new();
     let stats = CaptureReader::visit_path(&path, |packet| visited.push(packet)).unwrap();
 
     std::fs::remove_file(&path).unwrap();
     assert_eq!(stats.decoded_packets, 1);
-    assert_eq!(stats.skipped_packets, 0);
     assert_eq!(visited[0].timestamp_ns, 1_500_000_000);
+    assert_eq!(visited[0].destination_port, Some(443));
+}
+
+#[test]
+fn streaming_visitor_decodes_pcapng_simple_packet_blocks() {
+    let capture = pcapng_simple_packet_fixture(&ethernet_ipv4_tcp());
+    let path = std::env::temp_dir().join(format!(
+        "packethawk-streaming-simple-{}.pcapng",
+        std::process::id()
+    ));
+    std::fs::write(&path, capture).unwrap();
+
+    let mut visited = Vec::new();
+    let stats = CaptureReader::visit_path(&path, |packet| visited.push(packet)).unwrap();
+
+    std::fs::remove_file(&path).unwrap();
+    assert_eq!(stats.decoded_packets, 1);
+    assert_eq!(visited[0].timestamp_ns, 0);
     assert_eq!(visited[0].destination_port, Some(443));
 }
 
