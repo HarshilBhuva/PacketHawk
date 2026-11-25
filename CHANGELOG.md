@@ -34,5 +34,4 @@ All notable changes to PacketHawk are documented here. This project follows
 - DNS-over-TCP, DoH, DoT, and other encrypted DNS payloads are not inspected.
 - Detection results are heuristic investigative leads, not proof of compromise
   or calibrated probabilities.
-- The current release candidate targets Linux x86_64 only.
 - The published v0.1.0 binary archive targets Linux x86_64 only.
