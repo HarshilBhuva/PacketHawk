@@ -1,26 +1,42 @@
 # Changelog
 
-All notable user-visible changes to PacketHawk are documented here.
+All notable changes to PacketHawk are documented here. This project follows
+[Keep a Changelog](https://keepachangelog.com/en/1.1.0/) conventions.
 
-## [Unreleased]
+## [0.1.0] - Unreleased
+
+This is the planned first release. It is not published until every item in
+[the release checklist](docs/RELEASE_CHECKLIST.md) is complete.
 
 ### Added
-- Offline classic PCAP and PCAPNG ingestion with bounded input, packet, and block sizes.
-- Incremental PCAP/PCAPNG traversal for flow aggregation and packet-level detection.
-- Directional and bidirectional flow aggregation with bounded state and idle expiry.
-- Evidence-backed vertical and horizontal port-scan, periodic beaconing, and DNS query anomaly detections.
-- Streaming detection counters for late packets and detector-state evictions.
-- Criterion benchmarks for ingestion, flow aggregation, and detection, with CI report artifacts.
-- Immutable SHA-pinned GitHub Actions and dependency license/source policy checks.
 
-### Security and reliability
-- Malformed and truncated capture data is validated without panicking.
-- Per-source scan windows, beacon conversation state, and DNS deduplication are bounded.
-- Streaming detections report timestamp-ordering drops and state evictions.
+- Rust CLI and validated TOML detection configuration.
+- Offline classic PCAP and PCAPNG ingestion with bounded streaming readers.
+- Ethernet II, VLAN, Linux cooked, IPv4/IPv6, TCP/UDP/ICMP metadata decoding.
+- Bounded directional and bidirectional five-tuple flow aggregation with idle
+  expiration and least-recently-seen eviction.
+- Evidence-backed vertical and horizontal TCP/UDP port-scan indicators.
+- Periodic TCP/UDP beacon-like traffic analysis using inter-arrival variation.
+- UDP DNS question extraction and long/high-entropy query-name indicators.
+- Human-readable and JSON output for capture inspection, flow summaries, and
+  detection reports.
+- Criterion benchmarks, CI security/dependency policies, and checksummed
+  Linux x86_64 release-candidate packaging.
+
+### Security
+
+- Apply capture-file, packet-record, PCAPNG-block, and detector-state bounds.
+- Handle malformed and truncated capture input without parser panics.
+- Keep the initial product offline-only; no live capture, packet injection,
+  active scanning, or traffic blocking.
 
 ### Known limitations
-- Streaming detection ignores packets older than the maximum timestamp watermark.
-- Detector-state eviction can reduce coverage on very large or high-cardinality captures.
-- DNS parsing is limited to UDP DNS question names; DoH, DoT, encrypted DNS, and DNS-over-TCP are not analyzed.
-- IPv4 non-initial fragments and IPv6 extension-header chains are not reassembled.
-- No live capture, packet injection, active scanning, blocking, or automated response.
+
+- IPv4 non-initial fragments and unsupported IPv6 extension-header chains are
+  skipped; packet reassembly is not implemented.
+- DNS-over-TCP, DoH, DoT, and other encrypted DNS payloads are not inspected.
+- Detection results are heuristic investigative leads, not proof of compromise
+  or calibrated probabilities.
+- The current release candidate targets Linux x86_64 only.
+- A controlled reference-machine benchmark baseline and final release artifact
+  verification remain release gates.

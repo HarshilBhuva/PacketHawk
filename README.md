@@ -1,66 +1,136 @@
-# PacketHawk
+<div align="center">
 
-**An offline-first network threat analysis engine written in Rust.**
+<img src="docs/assets/packethawk-hero.svg" width="680" alt="PacketHawk — offline network threat analysis for PCAP and PCAPNG captures" />
 
-PacketHawk inspects PCAP/PCAPNG captures, normalizes packet metadata, reconstructs network flows, identifies suspicious traffic patterns, and produces evidence-backed security alerts.
+<br/>
 
-> **Release target:** `0.1.0` — offline PCAP/PCAPNG analysis with bounded streaming ingestion, flow aggregation, and evidence-backed detections.
+[![CI](https://img.shields.io/github/actions/workflow/status/HarshilBhuva/PacketHawk/ci.yml?branch=main&style=flat-square&logo=githubactions&logoColor=white&label=CI)](https://github.com/HarshilBhuva/PacketHawk/actions/workflows/ci.yml)
+[![Rust](https://img.shields.io/badge/Rust-1.85%2B-b7410e?style=flat-square&logo=rust&logoColor=white)](https://www.rust-lang.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-e5ac82?style=flat-square&labelColor=20211c)](LICENSE)
+[![Release](https://img.shields.io/badge/release-v0.1.0%20candidate-526b80?style=flat-square)](docs/RELEASE_CHECKLIST.md)
 
-## How PacketHawk works
+**Inspect the packets. Reconstruct the story. Surface the evidence.**
 
-PacketHawk analyzes saved captures through a bounded ingestion, decoding, flow, and detection pipeline.
+PacketHawk is an offline-first network threat analysis engine written in Rust.
+It turns saved PCAP/PCAPNG captures into bounded flow summaries and
+evidence-backed detection findings — without transmitting capture data or
+modifying network traffic.
 
-![PacketHawk architecture pipeline](docs/assets/packethawk-pipeline.svg)
+[Quick start](#-quick-start) · [Capabilities](#-what-it-detects) · [Architecture](#-analysis-pipeline) · [Security](#-security-model) · [Roadmap](#-project-status)
 
-### Analyst workflow
+</div>
 
-![PacketHawk investigation workflow](docs/assets/packethawk-workflow.svg)
+---
 
-## Current capabilities
+## The idea
 
-- Read classic PCAP and PCAPNG captures.
-- Stream classic-PCAP records and PCAPNG blocks incrementally into flow aggregation without retaining the full decoded packet list.
-- Enforce a 16 MiB per-packet record cap and 16 MiB + 4 KiB PCAPNG block cap, in addition to the 512 MiB capture-file cap.
-- Decode supported Ethernet, VLAN, Linux cooked, IPv4/IPv6, TCP/UDP/ICMP metadata.
-- Count malformed packet frames without panicking and cap input at 512 MiB.
-- Aggregate bounded directional or bidirectional five-tuple flows.
-- Track packet/byte counters, direction, first/last seen timestamps, and duration.
-- Expire idle flows and evict least-recently-seen flows at configured capacity.
-- Detect vertical TCP/UDP port scans across destination ports.
-- Detect horizontal TCP/UDP scans across destination hosts.
-- Detect regular periodic TCP/UDP conversations using inter-arrival coefficient of variation.
-- Extract DNS question names from UDP DNS queries and flag long or high-entropy names.
-- Emit evidence-backed alerts with severity, heuristic confidence, observed values, and thresholds.
-- Stream both PCAP formats through the bounded detection engine, with explicit late-packet and state-eviction counters.
+Network captures are noisy. PacketHawk gives analysts a repeatable path from
+raw capture files to explainable investigative leads.
 
-## Getting started
+<img src="docs/assets/packethawk-pipeline.svg" width="100%" alt="Animated PacketHawk pipeline: capture, decode, normalize, aggregate, detect, report." />
+
+<div align="center">
+
+| Offline by default | Bounded processing | Evidence first |
+|:---:|:---:|:---:|
+| No live capture or packet injection | Explicit input, packet, and state limits | Findings include observations and thresholds |
+
+</div>
+
+## What it detects
+
+| Detection | Signal | Analyst context |
+|---|---|---|
+| Vertical port scan | One source probes many destination ports on a host | Unique destination ports in a time window |
+| Horizontal port scan | One source probes the same service port across hosts | Unique destination hosts in a time window |
+| Beacon-like traffic | Repeated TCP/UDP conversations with regular intervals | Inter-arrival coefficient of variation |
+| DNS query anomaly | Long or high-entropy UDP DNS question names | Heuristic indicator; not proof of tunneling |
+
+Every alert is an investigative lead, not a verdict. PacketHawk reports the
+observed values and configured thresholds so an analyst can validate the
+signal against the surrounding capture.
+
+## Analysis pipeline
+
+<img src="docs/assets/packethawk-workflow.svg" width="100%" alt="Analyst workflow from selecting a capture through validation, flow context, detection, and evidence review." />
+
+### Current capabilities
+
+- Read classic PCAP and PCAPNG captures incrementally.
+- Decode supported Ethernet II, VLAN, Linux cooked, IPv4/IPv6, TCP/UDP/ICMP metadata.
+- Bound capture files, packet records, PCAPNG blocks, flow state, and detector state.
+- Aggregate directional or bidirectional five-tuple flows.
+- Track packet/byte counters, first/last-seen timestamps, duration, idle expiry, and LRU eviction.
+- Stream capture records through flow aggregation and detection without retaining the full decoded packet list.
+- Count malformed frames, late packets, and state evictions instead of silently hiding those conditions.
+- Emit human-readable and JSON output for capture inspection, flow summaries, and detection reports.
+
+### Protocol and analysis limits
+
+- IPv4 non-initial fragments and unsupported IPv6 extension-header chains are skipped; reassembly is not implemented.
+- DNS inspection currently extracts UDP DNS question names. DNS-over-TCP, DoH, DoT, and encrypted DNS are not inspected.
+- Beaconing and scan findings are heuristic; confidence is not a calibrated probability.
+- No live capture, active scanning, packet injection, traffic blocking, or automated response.
+
+## Quick start
+
+**Requirements:** Rust 1.85 or newer.
 
 ```bash
 git clone https://github.com/HarshilBhuva/PacketHawk.git
 cd PacketHawk
+
 cargo build --locked
 cargo test --locked
 cargo run --locked -- --help
 ```
 
-Inspect, aggregate, and detect:
+Inspect a capture:
 
 ```bash
+# Packet and capture metadata
 cargo run -- capture inspect sample.pcap
+
+# Flow summaries as JSON
 cargo run -- capture flows sample.pcap --json
+
+# Evidence-backed detection report
 cargo run -- capture detect sample.pcap
-cargo run -- capture detect sample.pcap --config config/default.toml --json
+
+# Use a custom detection configuration
+cargo run -- capture detect sample.pcap \
+  --config config/default.toml --json
 ```
 
-## Performance benchmarks
-
-PacketHawk includes Criterion benchmarks for PCAP ingestion, flow aggregation, and the detection engine. They use deterministic synthetic data and are intended for before/after comparisons, not universal performance claims. See [the benchmark guide](docs/BENCHMARKS.md) for CI artifacts and interpretation.
+Validate the default configuration:
 
 ```bash
-REPEATS=3 ./scripts/benchmark-report.sh
+cargo run -- config check config/default.toml
 ```
 
-## Development checks
+## Configuration
+
+Detection thresholds and state limits are defined in
+[`config/default.toml`](config/default.toml). Keep configuration under version
+control with the capture-analysis procedure so that results are reproducible.
+The engine validates configuration before analysis.
+
+## Performance
+
+Criterion benchmarks cover PCAP ingestion, flow aggregation, and detection
+using deterministic synthetic workloads.
+
+```bash
+cargo bench --locked
+REPEATS=5 ./scripts/benchmark-report.sh
+```
+
+See [the benchmark guide](docs/BENCHMARKS.md) for the benchmark cases,
+environment capture, and interpretation. CI artifacts are useful for
+before/after comparisons, but hosted runners are not a controlled hardware
+baseline. Do not compare absolute numbers across different runner types.
+
+## Development
 
 ```bash
 cargo fmt --all -- --check
@@ -71,40 +141,44 @@ cargo deny check licenses bans sources
 cargo build --locked --release
 ```
 
-## Roadmap
+## Project status
 
 | Milestone | Scope | Status |
 |---|---|---|
-| M0 | Foundation, models, configuration, CI | Complete |
-| M1 | Offline PCAP/PCAPNG ingestion | Complete |
-| M2 | Bounded flow aggregation | Complete |
-| M3 | Vertical and horizontal port-scan detections | Complete |
-| M4 | Port-scan and periodic beaconing detections | Complete |
-| M5 | DNS query parsing and anomaly detection | Complete |
-| M6 | Reproducible ingestion and analysis benchmarks | Complete |
-| M7 | Streaming classic-PCAP flow ingestion | Complete |
-| M8 | Streaming PCAPNG flow ingestion | Complete |
-| M9 | Streaming detection pipeline and bounded detector state | Complete |
-| M10 | v0.1.0 release hardening | Complete |
-| M11 | License policy, immutable action pins, CI benchmark artifacts | Complete |
-| M12 | Controlled benchmark baseline and v0.1.0 release | In progress |
+| M0–M1 | Rust foundation, configuration, offline PCAP/PCAPNG ingestion | Complete |
+| M2 | Bounded directional and bidirectional flow aggregation | Complete |
+| M3–M5 | Port-scan, beacon-like, and DNS anomaly detections | Complete |
+| M6 | Criterion benchmark suites and CI artifacts | Complete |
+| M7–M9 | Streaming PCAP/PCAPNG analysis and bounded detector state | Complete |
+| M10–M11 | Release hardening, dependency audit, license policy, pinned Actions | Complete |
+| M12 | Controlled reference benchmark and v0.1.0 release verification | In progress |
 
-## Detection interpretation
+The project is an early-stage defensive analysis tool. The first release
+candidate currently targets Linux x86_64. A controlled reference-machine
+benchmark and final tagged-artifact verification remain open release gates;
+see [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md).
 
-Port-scan rules use unique destination endpoints in capture-time sliding windows. Beaconing analysis groups TCP/UDP packets by source, destination, destination port, and transport protocol, then evaluates inter-arrival interval coefficient of variation. It requires the configured minimum sample count and ignores zero-length intervals.
+## Security
 
-A low coefficient of variation can also describe legitimate polling, monitoring, software updates, and persistent application sessions. Confidence is a heuristic score, not a calibrated probability. Alerts are investigative leads, not proof of compromise.
+Treat captures and configuration as untrusted input. PacketHawk applies
+explicit resource bounds and validates malformed/truncated data. These
+protections reduce risk but do not make arbitrary files risk-free.
 
-The flow and detection commands stream both classic PCAP and PCAPNG records. The detection engine ignores packets older than its maximum timestamp watermark and reports bounded-state evictions. DNS anomaly rules flag long or high-entropy DNS question names. DNS over TCP, DoH, DoT, and encrypted DNS payloads remain outside current parser coverage. No live capture, packet injection, blocking, or active scanning is performed.
+For vulnerability reporting and supported security expectations, see
+[`SECURITY.md`](SECURITY.md).
 
-## Benchmarks
+## Contributing
 
-PacketHawk includes Criterion suites for 20,000-packet PCAP ingestion, 10,000-packet flow aggregation, and 10,000-packet detection. See [docs/BENCHMARKS.md](docs/BENCHMARKS.md) for commands and interpretation. CI stores Criterion reports as short-lived artifacts; they are not cross-machine performance guarantees.
-
-## Security and release status
-
-PacketHawk is an early-stage defensive analysis tool. Review [SECURITY.md](SECURITY.md) before reporting vulnerabilities and [the release checklist](docs/RELEASE_CHECKLIST.md) for current v0.1.0 release gates. No stable release has been published yet.
+Issues and focused pull requests are welcome. Keep changes scoped, add
+regression tests for parser or detection behavior, and include benchmark
+evidence when changing hot paths. See [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT — see [`LICENSE`](LICENSE).
+
+<div align="center">
+
+**PacketHawk · Capture. Correlate. Investigate.**
+
+</div>
