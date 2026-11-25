@@ -56,7 +56,7 @@ Terminal / JSON Reports
 ## Resource and reliability requirements
 
 - Treat all capture contents as untrusted input.
-- Bound capture input and active flow state.
+- Bound capture input to 512 MiB, individual packet records to 16 MiB, and active flow state.
 - Use a hash map for flow lookup and an ordered recency index for expiry/eviction.
 - Expire flows using a maximum observed timestamp watermark so out-of-order timestamps do not move recency backwards.
 - Evict the least-recently-seen flow when the configured active-flow capacity is reached.

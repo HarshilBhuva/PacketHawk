@@ -179,6 +179,24 @@ fn streaming_visitor_preserves_pcapng_compatibility() {
 }
 
 #[test]
+fn streaming_visitor_rejects_oversized_packet_before_allocating_frame() {
+    let mut capture = pcap_fixture(&ethernet_ipv4_tcp());
+    let oversized = (16 * 1024 * 1024 + 1) as u32;
+    capture[32..36].copy_from_slice(&oversized.to_le_bytes());
+    capture[36..40].copy_from_slice(&oversized.to_le_bytes());
+    let path = std::env::temp_dir().join(format!(
+        "packethawk-streaming-oversized-{}.pcap",
+        std::process::id()
+    ));
+    std::fs::write(&path, capture).unwrap();
+
+    let error = CaptureReader::visit_path(&path, |_| {}).unwrap_err();
+
+    std::fs::remove_file(&path).unwrap();
+    assert!(error.to_string().contains("packet record exceeds"));
+}
+
+#[test]
 fn streaming_visitor_rejects_truncated_global_header() {
     let path = std::env::temp_dir().join(format!(
         "packethawk-streaming-truncated-{}.pcap",

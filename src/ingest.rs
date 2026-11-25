@@ -12,6 +12,7 @@ use thiserror::Error;
 use crate::models::{NormalizedPacket, TransportProtocol};
 
 const MAX_CAPTURE_BYTES: u64 = 512 * 1024 * 1024;
+const MAX_PACKET_BYTES: usize = 16 * 1024 * 1024;
 const LINKTYPE_ETHERNET: u32 = 1;
 const LINKTYPE_RAW: u32 = 101;
 const LINKTYPE_LINUX_SLL: u32 = 113;
@@ -22,6 +23,8 @@ pub enum CaptureError {
     Io(#[from] io::Error),
     #[error("capture exceeds the configured safety limit of {MAX_CAPTURE_BYTES} bytes")]
     TooLarge,
+    #[error("packet record exceeds the configured safety limit of {MAX_PACKET_BYTES} bytes")]
+    PacketTooLarge,
     #[error("unsupported or unrecognized capture format")]
     UnknownFormat,
     #[error("malformed capture: {0}")]
@@ -173,6 +176,9 @@ fn visit_classic_pcap<R: Read>(
         let fraction = endian.u32(&packet_header[4..8]) as u128;
         let captured = endian.u32(&packet_header[8..12]) as usize;
         let original = endian.u32(&packet_header[12..16]) as usize;
+        if captured > MAX_PACKET_BYTES {
+            return Err(CaptureError::PacketTooLarge);
+        }
         if captured > original {
             return Err(CaptureError::Malformed(
                 "invalid or truncated PCAP packet data",
@@ -265,6 +271,9 @@ fn parse_pcap(bytes: &[u8]) -> Result<CaptureReport, CaptureError> {
         let captured = endian.u32(&header[8..12]) as usize;
         let original = endian.u32(&header[12..16]) as usize;
         offset += 16;
+        if captured > MAX_PACKET_BYTES {
+            return Err(CaptureError::PacketTooLarge);
+        }
         if captured > original || captured > bytes.len().saturating_sub(offset) {
             return Err(CaptureError::Malformed(
                 "invalid or truncated PCAP packet data",
@@ -372,6 +381,9 @@ fn parse_pcapng(bytes: &[u8]) -> Result<CaptureReport, CaptureError> {
                     .checked_add(3)
                     .ok_or(CaptureError::Malformed("packet length overflow"))?
                     & !3;
+                if captured > MAX_PACKET_BYTES {
+                    return Err(CaptureError::PacketTooLarge);
+                }
                 if captured > original || 28 + padded > block_len - 4 {
                     return Err(CaptureError::Malformed("invalid enhanced packet length"));
                 }
@@ -395,6 +407,9 @@ fn parse_pcapng(bytes: &[u8]) -> Result<CaptureReport, CaptureError> {
                 let original = order.u32(&block[8..12]) as usize;
                 let available = block_len - 16;
                 let captured = original.min(available);
+                if captured > MAX_PACKET_BYTES {
+                    return Err(CaptureError::PacketTooLarge);
+                }
                 if let Some(packet) =
                     decode_frame(interface.link_type, &block[12..12 + captured], 0)
                 {
