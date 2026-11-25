@@ -7,7 +7,7 @@
 [![CI](https://img.shields.io/github/actions/workflow/status/HarshilBhuva/PacketHawk/ci.yml?branch=main&style=flat-square&logo=githubactions&logoColor=white&label=CI)](https://github.com/HarshilBhuva/PacketHawk/actions/workflows/ci.yml)
 [![Rust](https://img.shields.io/badge/Rust-1.85%2B-b7410e?style=flat-square&logo=rust&logoColor=white)](https://www.rust-lang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-e5ac82?style=flat-square&labelColor=20211c)](LICENSE)
-[![Release](https://img.shields.io/badge/release-v0.1.0%20candidate-526b80?style=flat-square)](docs/RELEASE_CHECKLIST.md)
+[![Release](https://img.shields.io/badge/release-v0.1.0%20pending-8a6f4d?style=flat-square)](docs/RELEASE_CHECKLIST.md)
 
 **Inspect the packets. Reconstruct the story. Surface the evidence.**
 
@@ -153,10 +153,11 @@ cargo build --locked --release
 | M10–M11 | Release hardening, dependency audit, license policy, pinned Actions | Complete |
 | M12 | Controlled reference benchmark and v0.1.0 release verification | In progress |
 
-The project is an early-stage defensive analysis tool. The first release
-candidate currently targets Linux x86_64. A controlled reference-machine
-benchmark and final tagged-artifact verification remain open release gates;
-see [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md).
+The project is an early-stage defensive analysis tool. The v0.1.0 release is
+pending final tagged-artifact verification and currently targets Linux
+x86_64. The controlled reference-machine benchmark is complete; the tagged
+release archive and checksum verification remain open gates. See
+[`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md).
 
 ## Security
 
