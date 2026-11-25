@@ -26,19 +26,19 @@ This checklist is a release gate, not a statement that v0.1.0 is ready.
 ## Documentation and packaging
 
 - [ ] Update `CHANGELOG.md` with the exact release contents.
-- [ ] Review `SECURITY.md`, `README.md`, protocol coverage, and heuristic limitations.
+- [x] Review `SECURITY.md`, `README.md`, protocol coverage, and heuristic limitations.
 - [ ] Confirm CLI examples match the released binary.
-- [ ] Build the release artifact from the tagged commit with the committed lockfile.
-- [ ] Generate SHA-256 checksums and verify the downloaded artifact.
+- [x] Build and checksum a non-release Linux x86_64 candidate artifact in CI; verify its checksum in the job.
+- [ ] Build the final release artifact from the tagged commit with the committed lockfile.
+- [ ] Download the tagged artifact and verify its SHA-256 checksum.
 - [ ] Create the `v0.1.0` tag only after every required gate passes.
 
 ## Current release blockers
 
 - Controlled reference-machine benchmark baselines remain outstanding.
-- Benchmark baselines have not been recorded on a documented reference environment.
 - No tagged release artifact or SHA-256 verification has been published.
 - The changelog still needs a final `0.1.0` entry immediately before tagging.
 
 ## Release interpretation
 
-The current CI proves formatting, Clippy, tests, benchmark compilation, stable release compilation, Rust 1.85 compatibility, and dependency vulnerability scanning. The new cargo-deny policy job must still validate licenses and sources. CI benchmark artifacts are diagnostic, not a controlled reference baseline. These checks do not prove cross-platform behavior or production readiness.
+The current CI proves formatting, Clippy, tests, benchmark compilation, stable release compilation, Rust 1.85 compatibility, dependency vulnerability scanning, license/source policy, and candidate archive checksum verification. CI benchmark artifacts are diagnostic, not a controlled reference baseline. The release workflow currently packages Linux x86_64 only; these checks do not prove cross-platform behavior or production readiness.

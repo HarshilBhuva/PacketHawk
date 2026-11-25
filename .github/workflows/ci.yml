@@ -48,6 +48,22 @@ jobs:
           ./target/release/packethawk --help >/dev/null
           ./target/release/packethawk config check config/default.toml
 
+      - name: Package and verify Linux release candidate
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          tar -czf "dist/packethawk-${GITHUB_SHA}-linux-x86_64.tar.gz" -C target/release packethawk
+          (cd dist && sha256sum *.tar.gz > SHA256SUMS.txt)
+          (cd dist && sha256sum -c SHA256SUMS.txt)
+
+      - name: Upload Linux release candidate
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: packethawk-candidate-${{ github.sha }}
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 14
+
   msrv:
     name: Minimum supported Rust version
     runs-on: ubuntu-latest
