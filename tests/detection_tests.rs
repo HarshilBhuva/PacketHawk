@@ -36,7 +36,10 @@ fn vertical_scan_alerts_on_unique_destination_ports() {
     let alerts = detector.observe(&packet(3, [10, 0, 0, 1], [10, 0, 0, 2], 443));
     assert_eq!(alerts.len(), 1);
     assert_eq!(alerts[0].rule_id, "PORT_SCAN_VERTICAL");
-    assert_eq!(alerts[0].destination_ip, Some(IpAddr::V4(Ipv4Addr::new(10,0,0,2))));
+    assert_eq!(
+        alerts[0].destination_ip,
+        Some(IpAddr::V4(Ipv4Addr::new(10, 0, 0, 2)))
+    );
     assert!(alerts[0].evidence[0].contains("3 unique destination ports"));
 }
 
@@ -55,7 +58,11 @@ fn horizontal_scan_alerts_on_unique_hosts_at_same_port() {
 fn repeated_packets_to_same_port_do_not_trigger_vertical_scan() {
     let mut detector = PortScanDetector::new(&config(), 100);
     for ts in 1..20 {
-        assert!(detector.observe(&packet(ts, [10, 0, 0, 1], [10, 0, 0, 2], 443)).is_empty());
+        assert!(
+            detector
+                .observe(&packet(ts, [10, 0, 0, 1], [10, 0, 0, 2], 443))
+                .is_empty()
+        );
     }
 }
 
@@ -63,7 +70,11 @@ fn repeated_packets_to_same_port_do_not_trigger_vertical_scan() {
 fn late_packets_outside_watermark_window_are_ignored() {
     let mut detector = PortScanDetector::new(&config(), 100);
     detector.observe(&packet(20_000_000_000, [10, 0, 0, 1], [10, 0, 0, 2], 22));
-    assert!(detector.observe(&packet(1, [10, 0, 0, 1], [10, 0, 0, 2], 80)).is_empty());
+    assert!(
+        detector
+            .observe(&packet(1, [10, 0, 0, 1], [10, 0, 0, 2], 80))
+            .is_empty()
+    );
 }
 
 #[test]

@@ -116,7 +116,10 @@ impl PortScanDetector {
             .retain(|_, seen| watermark.saturating_sub(*seen) < self.window_ns);
         tracker.last_updated_ns = tracker.last_updated_ns.max(packet.timestamp_ns);
         if tracker.targets.len() < MAX_TARGETS_PER_TRACKER {
-            tracker.targets.entry(Target::Port(port)).or_insert(packet.timestamp_ns);
+            tracker
+                .targets
+                .entry(Target::Port(port))
+                .or_insert(packet.timestamp_ns);
         }
         if tracker.targets.is_empty() {
             tracker.alerted = false;
@@ -125,7 +128,14 @@ impl PortScanDetector {
             return None;
         }
         tracker.alerted = true;
-        let mut ports: Vec<u16> = tracker.targets.keys().filter_map(|t| match t { Target::Port(p) => Some(*p), _ => None }).collect();
+        let mut ports: Vec<u16> = tracker
+            .targets
+            .keys()
+            .filter_map(|t| match t {
+                Target::Port(p) => Some(*p),
+                _ => None,
+            })
+            .collect();
         ports.sort_unstable();
         let sample = ports.iter().take(12).map(u16::to_string).collect::<Vec<_>>().join(", ");
         let (source, destination) = match key { ScanKey::Vertical { source, destination } => (source, destination), _ => return None };
@@ -137,8 +147,15 @@ impl PortScanDetector {
             destination_ip: Some(destination),
             confidence: 0.75,
             evidence: vec![
-                format!("Observed {} unique destination ports; threshold is {}.", tracker.targets.len(), self.vertical_threshold),
-                format!("Observation window: {} seconds.", self.window_ns / 1_000_000_000),
+                format!(
+                    "Observed {} unique destination ports; threshold is {}.",
+                    tracker.targets.len(),
+                    self.vertical_threshold
+                ),
+                format!(
+                    "Observation window: {} seconds.",
+                    self.window_ns / 1_000_000_000
+                ),
                 format!("Destination port sample: {sample}."),
                 "Legitimate service discovery can produce similar traffic; review this indicator.".into(),
             ],
@@ -162,7 +179,10 @@ impl PortScanDetector {
             .retain(|_, seen| watermark.saturating_sub(*seen) < self.window_ns);
         tracker.last_updated_ns = tracker.last_updated_ns.max(packet.timestamp_ns);
         if tracker.targets.len() < MAX_TARGETS_PER_TRACKER {
-            tracker.targets.entry(Target::Host(host)).or_insert(packet.timestamp_ns);
+            tracker
+                .targets
+                .entry(Target::Host(host))
+                .or_insert(packet.timestamp_ns);
         }
         if tracker.targets.is_empty() {
             tracker.alerted = false;
@@ -171,7 +191,14 @@ impl PortScanDetector {
             return None;
         }
         tracker.alerted = true;
-        let mut hosts: Vec<IpAddr> = tracker.targets.keys().filter_map(|t| match t { Target::Host(ip) => Some(*ip), _ => None }).collect();
+        let mut hosts: Vec<IpAddr> = tracker
+            .targets
+            .keys()
+            .filter_map(|t| match t {
+                Target::Host(ip) => Some(*ip),
+                _ => None,
+            })
+            .collect();
         hosts.sort_unstable();
         let sample = hosts.iter().take(12).map(ToString::to_string).collect::<Vec<_>>().join(", ");
         let (source, destination_port) = match key { ScanKey::Horizontal { source, destination_port } => (source, destination_port), _ => return None };
@@ -183,7 +210,11 @@ impl PortScanDetector {
             destination_ip: None,
             confidence: 0.75,
             evidence: vec![
-                format!("Observed {} unique destination hosts on port {destination_port}; threshold is {}.", tracker.targets.len(), self.horizontal_threshold),
+                format!(
+                    "Observed {} unique destination hosts on port {destination_port}; threshold is {}.",
+                    tracker.targets.len(),
+                    self.horizontal_threshold
+                ),
                 format!("Observation window: {} seconds.", self.window_ns / 1_000_000_000),
                 format!("Destination host sample: {sample}."),
                 "Legitimate inventory and monitoring can produce similar traffic; review this indicator.".into(),
@@ -195,8 +226,16 @@ impl PortScanDetector {
         if self.active_tracker_count() < self.max_trackers {
             return;
         }
-        let oldest_vertical = self.vertical.iter().min_by_key(|(_, t)| t.last_updated_ns).map(|(k, t)| (t.last_updated_ns, k.clone()));
-        let oldest_horizontal = self.horizontal.iter().min_by_key(|(_, t)| t.last_updated_ns).map(|(k, t)| (t.last_updated_ns, k.clone()));
+        let oldest_vertical = self
+            .vertical
+            .iter()
+            .min_by_key(|(_, t)| t.last_updated_ns)
+            .map(|(k, t)| (t.last_updated_ns, k.clone()));
+        let oldest_horizontal = self
+            .horizontal
+            .iter()
+            .min_by_key(|(_, t)| t.last_updated_ns)
+            .map(|(k, t)| (t.last_updated_ns, k.clone()));
         match (oldest_vertical, oldest_horizontal) {
             (Some((vt, vk)), Some((ht, hk))) if vt <= ht => { self.vertical.remove(&vk); }
             (Some(_), Some((_, hk))) => { self.horizontal.remove(&hk); }
