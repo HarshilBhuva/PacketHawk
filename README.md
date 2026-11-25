@@ -54,7 +54,7 @@ cargo run -- capture detect sample.pcap --config config/default.toml --json
 
 ## Performance benchmarks
 
-PacketHawk includes Criterion benchmarks for PCAP ingestion, flow aggregation, and the detection engine. They use deterministic synthetic data and are intended for before/after comparisons, not universal performance claims.
+PacketHawk includes Criterion benchmarks for PCAP ingestion, flow aggregation, and the detection engine. They use deterministic synthetic data and are intended for before/after comparisons, not universal performance claims. See [the benchmark guide](docs/BENCHMARKS.md) for CI artifacts and interpretation.
 
 ```bash
 cargo bench --bench ingestion
@@ -65,10 +65,11 @@ cargo bench --bench analysis
 
 ```bash
 cargo fmt --all -- --check
-cargo clippy --all-targets --all-features -- -D warnings
-cargo test --all-targets
-cargo bench --no-run
-cargo build --release
+cargo clippy --locked --all-targets --all-features -- -D warnings
+cargo test --locked --all-targets
+cargo bench --locked --no-run
+cargo deny check licenses bans sources
+cargo build --locked --release
 ```
 
 ## Roadmap
@@ -85,7 +86,9 @@ cargo build --release
 | M7 | Streaming classic-PCAP flow ingestion | Complete |
 | M8 | Streaming PCAPNG flow ingestion | Complete |
 | M9 | Streaming detection pipeline and bounded detector state | Complete |
-| M10 | v0.1.0 release hardening | Implemented in this branch |
+| M10 | v0.1.0 release hardening | Complete |
+| M11 | License policy, immutable action pins, CI benchmark artifacts | Implemented in this branch |
+| M12 | Controlled benchmark baseline and v0.1.0 release | Planned |
 
 ## Detection interpretation
 
@@ -94,6 +97,10 @@ Port-scan rules use unique destination endpoints in capture-time sliding windows
 A low coefficient of variation can also describe legitimate polling, monitoring, software updates, and persistent application sessions. Confidence is a heuristic score, not a calibrated probability. Alerts are investigative leads, not proof of compromise.
 
 The flow and detection commands stream both classic PCAP and PCAPNG records. The detection engine ignores packets older than its maximum timestamp watermark and reports bounded-state evictions. DNS anomaly rules flag long or high-entropy DNS question names. DNS over TCP, DoH, DoT, and encrypted DNS payloads remain outside current parser coverage. No live capture, packet injection, blocking, or active scanning is performed.
+
+## Benchmarks
+
+PacketHawk includes Criterion suites for 20,000-packet PCAP ingestion, 10,000-packet flow aggregation, and 10,000-packet detection. See [docs/BENCHMARKS.md](docs/BENCHMARKS.md) for commands and interpretation. CI stores Criterion reports as short-lived artifacts; they are not cross-machine performance guarantees.
 
 ## Security and release status
 

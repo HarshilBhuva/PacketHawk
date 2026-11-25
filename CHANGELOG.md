@@ -10,7 +10,8 @@ All notable user-visible changes to PacketHawk are documented here.
 - Directional and bidirectional flow aggregation with bounded state and idle expiry.
 - Evidence-backed vertical and horizontal port-scan, periodic beaconing, and DNS query anomaly detections.
 - Streaming detection counters for late packets and detector-state evictions.
-- Criterion benchmarks for ingestion, flow aggregation, and detection.
+- Criterion benchmarks for ingestion, flow aggregation, and detection, with CI report artifacts.
+- Immutable SHA-pinned GitHub Actions and dependency license/source policy checks.
 
 ### Security and reliability
 - Malformed and truncated capture data is validated without panicking.

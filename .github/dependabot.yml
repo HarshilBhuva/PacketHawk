@@ -8,6 +8,8 @@ updates:
     ignore:
       - dependency-name: criterion
         versions: [">=0.8.0"]
+      - dependency-name: toml
+        versions: [">=1.0.0"]
 
   - package-ecosystem: github-actions
     directory: /

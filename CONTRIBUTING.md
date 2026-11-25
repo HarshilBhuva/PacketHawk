@@ -15,6 +15,8 @@ cargo fmt --all
 cargo clippy --locked --all-targets --all-features -- -D warnings
 cargo test --locked --all-targets
 cargo bench --locked --no-run
+cargo deny check licenses bans sources
+cargo audit
 cargo build --locked --release
 ./target/release/packethawk --version
 ./target/release/packethawk config check config/default.toml
