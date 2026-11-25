@@ -112,8 +112,11 @@ jobs:
       - name: Cache Cargo
         uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
 
-      - name: Run Criterion benchmarks
-        run: cargo bench --locked -- --noplot
+      - name: Run ingestion benchmarks
+        run: cargo bench --locked --bench ingestion -- --noplot
+
+      - name: Run analysis benchmarks
+        run: cargo bench --locked --bench analysis -- --noplot
 
       - name: Upload Criterion reports
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7

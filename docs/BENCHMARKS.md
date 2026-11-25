@@ -11,7 +11,8 @@
 ## Run locally
 
 ```bash
-cargo bench --locked -- --noplot
+cargo bench --locked --bench ingestion -- --noplot
+cargo bench --locked --bench analysis -- --noplot
 ```
 
 Criterion reports are written to `target/criterion/`. To compare a local change against a named baseline:
