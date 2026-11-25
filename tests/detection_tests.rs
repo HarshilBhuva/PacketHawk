@@ -88,8 +88,8 @@ fn non_tcp_udp_packets_are_ignored() {
 #[test]
 fn tracker_state_is_bounded() {
     let mut detector = PortScanDetector::new(&config(), 2);
-    for n in 1..10 {
-        detector.observe(&packet(n, [10, 0, 0, n], [10, 0, 1, n], 443));
+    for n in 1u8..10 {
+        detector.observe(&packet(u128::from(n), [10, 0, 0, n], [10, 0, 1, n], 443));
     }
     assert!(detector.active_tracker_count() <= 2);
 }
