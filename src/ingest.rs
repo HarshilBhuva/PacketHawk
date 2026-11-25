@@ -13,6 +13,7 @@ use crate::models::{NormalizedPacket, TransportProtocol};
 
 const MAX_CAPTURE_BYTES: u64 = 512 * 1024 * 1024;
 const MAX_PACKET_BYTES: usize = 16 * 1024 * 1024;
+const MAX_PCAPNG_BLOCK_BYTES: usize = MAX_PACKET_BYTES + 4096;
 const LINKTYPE_ETHERNET: u32 = 1;
 const LINKTYPE_RAW: u32 = 101;
 const LINKTYPE_LINUX_SLL: u32 = 113;
@@ -25,6 +26,8 @@ pub enum CaptureError {
     TooLarge,
     #[error("packet record exceeds the configured safety limit of {MAX_PACKET_BYTES} bytes")]
     PacketTooLarge,
+    #[error("PCAPNG block exceeds the configured safety limit of {MAX_PCAPNG_BLOCK_BYTES} bytes")]
+    BlockTooLarge,
     #[error("unsupported or unrecognized capture format")]
     UnknownFormat,
     #[error("malformed capture: {0}")]
@@ -58,10 +61,10 @@ impl CaptureReader {
         Self::read(file)
     }
 
-    /// Visit decoded packets without retaining the complete classic-PCAP packet list.
+    /// Visit decoded packets without retaining the complete capture packet list.
     ///
-    /// Classic PCAP records are read and decoded one at a time. PCAPNG currently
-    /// uses the compatibility parser and therefore materializes its packet list.
+    /// Classic PCAP records and PCAPNG blocks are read and decoded incrementally.
+    /// Only the current packet frame or PCAPNG block is retained by the reader.
     pub fn visit_path(
         path: impl AsRef<Path>,
         mut visitor: impl FnMut(NormalizedPacket),
@@ -82,15 +85,7 @@ impl CaptureReader {
         })?;
 
         if magic == [0x0a, 0x0d, 0x0d, 0x0a] {
-            let report = Self::read_path(path)?;
-            let stats = CaptureStats {
-                decoded_packets: report.packets.len(),
-                skipped_packets: report.skipped_packets,
-            };
-            for packet in report.packets {
-                visitor(packet);
-            }
-            return Ok(stats);
+            return visit_pcapng(reader, magic, &mut visitor);
         }
 
         visit_classic_pcap(reader, magic, &mut visitor)
@@ -207,6 +202,209 @@ fn visit_classic_pcap<R: Read>(
             stats.skipped_packets = stats.skipped_packets.saturating_add(1);
         }
     }
+    Ok(stats)
+}
+
+fn read_bounded_malformed<R: Read>(
+    reader: &mut R,
+    buffer: &mut [u8],
+    bytes_read: &mut u64,
+    message: &'static str,
+) -> Result<(), CaptureError> {
+    read_bounded(reader, buffer, bytes_read).map_err(|error| match error {
+        CaptureError::Io(ref io_error) if io_error.kind() == io::ErrorKind::UnexpectedEof => {
+            CaptureError::Malformed(message)
+        }
+        other => other,
+    })
+}
+
+fn validate_pcapng_trailer(block: &[u8], endian: Endian) -> Result<(), CaptureError> {
+    let block_len = block.len();
+    if endian.u32(&block[block_len - 4..]) as usize != block_len {
+        return Err(CaptureError::Malformed(
+            "PCAPNG block length trailer mismatch",
+        ));
+    }
+    Ok(())
+}
+
+fn visit_pcapng<R: Read>(
+    mut reader: R,
+    first_block_type: [u8; 4],
+    visitor: &mut impl FnMut(NormalizedPacket),
+) -> Result<CaptureStats, CaptureError> {
+    const SECTION_HEADER: [u8; 4] = [0x0a, 0x0d, 0x0d, 0x0a];
+
+    let mut bytes_read = 4u64;
+    let mut block_type = first_block_type;
+    let mut endian = None;
+    let mut interfaces: Vec<Interface> = Vec::new();
+    let mut stats = CaptureStats::default();
+
+    loop {
+        let is_section_header = block_type == SECTION_HEADER;
+        let (order, block) = if is_section_header {
+            let mut section_prefix = [0u8; 8];
+            read_bounded_malformed(
+                &mut reader,
+                &mut section_prefix,
+                &mut bytes_read,
+                "truncated PCAPNG section header",
+            )?;
+            let section_order = match &section_prefix[4..8] {
+                [0x4d, 0x3c, 0x2b, 0x1a] => Endian::Little,
+                [0x1a, 0x2b, 0x3c, 0x4d] => Endian::Big,
+                _ => return Err(CaptureError::Malformed("invalid PCAPNG byte-order magic")),
+            };
+            let block_len = section_order.u32(&section_prefix[..4]) as usize;
+            if block_len < 28 || block_len % 4 != 0 {
+                return Err(CaptureError::Malformed(
+                    "invalid PCAPNG section header length",
+                ));
+            }
+            if block_len > MAX_PCAPNG_BLOCK_BYTES {
+                return Err(CaptureError::BlockTooLarge);
+            }
+            let mut block = Vec::with_capacity(block_len);
+            block.extend_from_slice(&block_type);
+            block.extend_from_slice(&section_prefix);
+            block.resize(block_len, 0);
+            read_bounded_malformed(
+                &mut reader,
+                &mut block[12..],
+                &mut bytes_read,
+                "truncated PCAPNG section header",
+            )?;
+            endian = Some(section_order);
+            interfaces.clear();
+            (section_order, block)
+        } else {
+            let section_order = endian.ok_or(CaptureError::Malformed(
+                "PCAPNG block before section header",
+            ))?;
+            let mut length_bytes = [0u8; 4];
+            read_bounded_malformed(
+                &mut reader,
+                &mut length_bytes,
+                &mut bytes_read,
+                "truncated PCAPNG block header",
+            )?;
+            let block_len = section_order.u32(&length_bytes) as usize;
+            if block_len < 12 || block_len % 4 != 0 {
+                return Err(CaptureError::Malformed("invalid PCAPNG block length"));
+            }
+            if block_len > MAX_PCAPNG_BLOCK_BYTES {
+                return Err(CaptureError::BlockTooLarge);
+            }
+            let mut block = Vec::with_capacity(block_len);
+            block.extend_from_slice(&block_type);
+            block.extend_from_slice(&length_bytes);
+            block.resize(block_len, 0);
+            read_bounded_malformed(
+                &mut reader,
+                &mut block[8..],
+                &mut bytes_read,
+                "truncated PCAPNG block",
+            )?;
+            (section_order, block)
+        };
+
+        validate_pcapng_trailer(&block, order)?;
+        match order.u32(&block[..4]) {
+            0x0a0d0d0a => {}
+            1 => {
+                if block.len() < 20 {
+                    return Err(CaptureError::Malformed(
+                        "truncated interface description block",
+                    ));
+                }
+                let link_type = order.u16(&block[8..10]) as u32;
+                let mut interface = Interface {
+                    link_type,
+                    timestamp_units_per_second: 1_000_000,
+                    timestamp_offset: 0,
+                };
+                parse_interface_options(&block[16..block.len() - 4], order, &mut interface)?;
+                interfaces.push(interface);
+            }
+            6 => {
+                if block.len() < 32 {
+                    return Err(CaptureError::Malformed("truncated enhanced packet block"));
+                }
+                let interface_id = order.u32(&block[8..12]) as usize;
+                let interface = *interfaces
+                    .get(interface_id)
+                    .ok_or(CaptureError::Malformed("unknown PCAPNG interface id"))?;
+                validate_link_type(interface.link_type)?;
+                let ticks =
+                    ((order.u32(&block[12..16]) as u64) << 32) | order.u32(&block[16..20]) as u64;
+                let captured = order.u32(&block[20..24]) as usize;
+                let original = order.u32(&block[24..28]) as usize;
+                if captured > MAX_PACKET_BYTES {
+                    return Err(CaptureError::PacketTooLarge);
+                }
+                let padded = captured
+                    .checked_add(3)
+                    .ok_or(CaptureError::Malformed("packet length overflow"))?
+                    & !3;
+                if captured > original || 28 + padded > block.len() - 4 {
+                    return Err(CaptureError::Malformed("invalid enhanced packet length"));
+                }
+                let timestamp_ns = ticks_to_ns(ticks, interface);
+                if let Some(packet) =
+                    decode_frame(interface.link_type, &block[28..28 + captured], timestamp_ns)
+                {
+                    stats.decoded_packets = stats.decoded_packets.saturating_add(1);
+                    visitor(packet);
+                } else {
+                    stats.skipped_packets = stats.skipped_packets.saturating_add(1);
+                }
+            }
+            3 => {
+                if block.len() < 16 {
+                    return Err(CaptureError::Malformed("truncated simple packet block"));
+                }
+                let interface = *interfaces.first().ok_or(CaptureError::Malformed(
+                    "simple packet block has no interface",
+                ))?;
+                validate_link_type(interface.link_type)?;
+                let original = order.u32(&block[8..12]) as usize;
+                let available = block.len() - 16;
+                let captured = original.min(available);
+                if captured > MAX_PACKET_BYTES {
+                    return Err(CaptureError::PacketTooLarge);
+                }
+                if let Some(packet) =
+                    decode_frame(interface.link_type, &block[12..12 + captured], 0)
+                {
+                    stats.decoded_packets = stats.decoded_packets.saturating_add(1);
+                    visitor(packet);
+                } else {
+                    stats.skipped_packets = stats.skipped_packets.saturating_add(1);
+                }
+            }
+            _ => {}
+        }
+
+        let mut next_type = [0u8; 4];
+        let first = reader.read(&mut next_type[..1])?;
+        if first == 0 {
+            break;
+        }
+        bytes_read = bytes_read.saturating_add(1);
+        if bytes_read > MAX_CAPTURE_BYTES {
+            return Err(CaptureError::TooLarge);
+        }
+        read_bounded_malformed(
+            &mut reader,
+            &mut next_type[1..],
+            &mut bytes_read,
+            "truncated PCAPNG block header",
+        )?;
+        block_type = next_type;
+    }
+
     Ok(stats)
 }
 
