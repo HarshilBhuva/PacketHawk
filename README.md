@@ -143,20 +143,9 @@ cargo build --locked --release
 
 ## Project status
 
-| Milestone | Scope | Status |
-|---|---|---|
-| M0–M1 | Rust foundation, configuration, offline PCAP/PCAPNG ingestion | Complete |
-| M2 | Bounded directional and bidirectional flow aggregation | Complete |
-| M3–M5 | Port-scan, beacon-like, and DNS anomaly detections | Complete |
-| M6 | Criterion benchmark suites and CI artifacts | Complete |
-| M7–M9 | Streaming PCAP/PCAPNG analysis and bounded detector state | Complete |
-| M10–M11 | Release hardening, dependency audit, license policy, pinned Actions | Complete |
-| M12 | Controlled reference benchmark and v0.1.0 release verification | Complete |
-
-The project is an early-stage defensive analysis tool. **v0.1.0 is released**
-for Linux x86_64. The tagged archive was built, extracted, smoke-tested, and
-published with a SHA-256 checksum file. See the [GitHub Release](https://github.com/HarshilBhuva/PacketHawk/releases/tag/v0.1.0)
-and [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md).
+PacketHawk **v0.1.0** is released for **Linux x86_64**. The
+[GitHub Release](https://github.com/HarshilBhuva/PacketHawk/releases/tag/v0.1.0)
+includes the portable archive and SHA-256 checksum file.
 
 ## Security
 
