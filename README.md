@@ -54,7 +54,7 @@ cargo run -- capture detect sample.pcap --config config/default.toml --json
 
 ## Performance benchmarks
 
-PacketHawk includes Criterion benchmarks for PCAP ingestion, flow aggregation, and the detection engine. They use deterministic synthetic data and are intended for before/after comparisons, not universal performance claims.
+PacketHawk includes Criterion benchmarks for PCAP ingestion, flow aggregation, and the detection engine. They use deterministic synthetic data and are intended for before/after comparisons, not universal performance claims. See [the benchmark guide](docs/BENCHMARKS.md) for CI artifacts and interpretation.
 
 ```bash
 cargo bench --bench ingestion
@@ -65,10 +65,11 @@ cargo bench --bench analysis
 
 ```bash
 cargo fmt --all -- --check
-cargo clippy --all-targets --all-features -- -D warnings
-cargo test --all-targets
-cargo bench --no-run
-cargo build --release
+cargo clippy --locked --all-targets --all-features -- -D warnings
+cargo test --locked --all-targets
+cargo bench --locked --no-run
+cargo deny check licenses bans sources
+cargo build --locked --release
 ```
 
 ## Roadmap
@@ -85,7 +86,9 @@ cargo build --release
 | M7 | Streaming classic-PCAP flow ingestion | Complete |
 | M8 | Streaming PCAPNG flow ingestion | Complete |
 | M9 | Streaming detection pipeline and bounded detector state | Complete |
-| M10 | v0.1.0 release hardening | Implemented in this branch |
+| M10 | v0.1.0 release hardening | Complete |
+| M11 | License policy, immutable action pins, CI benchmark artifacts | Implemented in this branch |
+| M12 | Controlled benchmark baseline and v0.1.0 release | Planned |
 
 ## Detection interpretation
 

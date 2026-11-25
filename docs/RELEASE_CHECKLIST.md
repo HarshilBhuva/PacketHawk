@@ -9,7 +9,7 @@ This checklist is a release gate, not a statement that v0.1.0 is ready.
 - [x] Run a dependency vulnerability audit against the committed lockfile (cargo-audit 0.23.0; no advisories reported for 99 dependencies on 2026-11-25).
 - [ ] Review dependency licenses and update policy using `cargo deny check licenses bans sources`.
 - [x] Confirm `rust-version = "1.85"` against an actual Rust 1.85.0 toolchain build.
-- [ ] Review GitHub Actions permissions and pin/update third-party actions deliberately.
+- [x] Review GitHub Actions permissions and pin third-party actions to immutable commit SHAs; Dependabot tracks action updates.
 
 ## Functional validation
 
@@ -34,11 +34,11 @@ This checklist is a release gate, not a statement that v0.1.0 is ready.
 
 ## Current release blockers
 
-- Dependency license review and third-party GitHub Actions pin/update review are still open.
+- Dependency license review must pass the new cargo-deny policy job.
 - Benchmark baselines have not been recorded on a documented reference environment.
 - No tagged release artifact or SHA-256 verification has been published.
 - The changelog still needs a final `0.1.0` entry immediately before tagging.
 
 ## Release interpretation
 
-The current CI proves formatting, Clippy, tests, benchmark compilation, and stable release compilation. It does not by itself prove dependency vulnerability status, reproducible dependency resolution, cross-platform behavior, or production readiness.
+The current CI proves formatting, Clippy, tests, benchmark compilation, stable release compilation, Rust 1.85 compatibility, and dependency vulnerability scanning. The new cargo-deny policy job must still validate licenses and sources. CI benchmark artifacts are diagnostic, not a controlled reference baseline. These checks do not prove cross-platform behavior or production readiness.
