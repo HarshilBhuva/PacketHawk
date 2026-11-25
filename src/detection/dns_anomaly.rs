@@ -11,6 +11,7 @@ use crate::{
 pub struct DnsAnomalyStats {
     pub queries_inspected: usize,
     pub anomalous_queries: usize,
+    pub state_evictions: usize,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -95,6 +96,7 @@ impl DnsAnomalyDetector {
             stats: DnsAnomalyStats {
                 queries_inspected,
                 anomalous_queries,
+                state_evictions: 0,
             },
             alerts,
         }

@@ -31,6 +31,7 @@ PacketHawk analyzes saved captures through a bounded ingestion, decoding, flow, 
 - Detect regular periodic TCP/UDP conversations using inter-arrival coefficient of variation.
 - Extract DNS question names from UDP DNS queries and flag long or high-entropy names.
 - Emit evidence-backed alerts with severity, heuristic confidence, observed values, and thresholds.
+- Stream both PCAP formats through the bounded detection engine, with explicit late-packet and state-eviction counters.
 
 ## Getting started
 
@@ -82,8 +83,9 @@ cargo build --release
 | M5 | DNS query parsing and anomaly detection | Complete |
 | M6 | Reproducible ingestion and analysis benchmarks | Complete |
 | M7 | Streaming classic-PCAP flow ingestion | Complete |
-| M8 | Streaming PCAPNG flow ingestion | Implemented in this branch |
-| M9 | Streaming detection pipeline and v0.1.0 release hardening | Planned |
+| M8 | Streaming PCAPNG flow ingestion | Complete |
+| M9 | Streaming detection pipeline and bounded detector state | Implemented in this branch |
+| M10 | v0.1.0 release hardening | Planned |
 
 ## Detection interpretation
 
@@ -91,7 +93,7 @@ Port-scan rules use unique destination endpoints in capture-time sliding windows
 
 A low coefficient of variation can also describe legitimate polling, monitoring, software updates, and persistent application sessions. Confidence is a heuristic score, not a calibrated probability. Alerts are investigative leads, not proof of compromise.
 
-The detection command still materializes decoded packets before analysis; flow aggregation streams both classic PCAP and PCAPNG records. DNS anomaly rules flag long or high-entropy DNS question names. DNS over TCP, DoH, DoT, and encrypted DNS payloads remain outside current parser coverage. No live capture, packet injection, blocking, or active scanning is performed.
+The flow and detection commands stream both classic PCAP and PCAPNG records. The detection engine ignores packets older than its maximum timestamp watermark and reports bounded-state evictions. DNS anomaly rules flag long or high-entropy DNS question names. DNS over TCP, DoH, DoT, and encrypted DNS payloads remain outside current parser coverage. No live capture, packet injection, blocking, or active scanning is performed.
 
 ## License
 

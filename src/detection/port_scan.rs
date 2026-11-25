@@ -13,6 +13,7 @@ pub struct PortScanStats {
     pub packets_considered: usize,
     pub vertical_alerts: usize,
     pub horizontal_alerts: usize,
+    pub state_evictions: usize,
 }
 
 /// Results from the vertical and horizontal TCP/UDP scan heuristics.
@@ -80,6 +81,7 @@ impl PortScanDetector {
                 packets_considered: considered,
                 vertical_alerts,
                 horizontal_alerts,
+                state_evictions: 0,
             },
             alerts,
         }

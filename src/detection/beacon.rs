@@ -11,6 +11,7 @@ use crate::{
 pub struct BeaconStats {
     pub conversations_considered: usize,
     pub alerts: usize,
+    pub state_evictions: usize,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -155,6 +156,7 @@ impl BeaconDetector {
             stats: BeaconStats {
                 conversations_considered,
                 alerts: alerts.len(),
+                state_evictions: 0,
             },
             alerts,
         }
