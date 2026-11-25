@@ -230,9 +230,9 @@ fn streaming_and_batch_reports_match_for_timestamp_ordered_input() {
     let streamed = engine.finish();
 
     assert_eq!(batch.port_scan.alerts, streamed.port_scan.alerts);
-    assert_eq!(batch.beaconing.alerts.len(), streamed.beaconing.alerts.len());
     assert_eq!(
-        batch.dns_anomaly.alerts,
-        streamed.dns_anomaly.alerts
+        batch.beaconing.alerts.len(),
+        streamed.beaconing.alerts.len()
     );
+    assert_eq!(batch.dns_anomaly.alerts, streamed.dns_anomaly.alerts);
 }
