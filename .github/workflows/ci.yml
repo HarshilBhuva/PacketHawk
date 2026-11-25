@@ -112,6 +112,14 @@ jobs:
       - name: Cache Cargo
         uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
 
+      - name: Record benchmark environment
+        run: |
+          rustc --version
+          cargo --version
+          uname -a
+          nproc
+          lscpu | grep -E 'Architecture|CPU\\(s\\)|Model name|Thread|Core|Socket'
+
       - name: Run ingestion benchmarks
         run: cargo bench --locked --bench ingestion -- --noplot
 
