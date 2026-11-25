@@ -75,3 +75,30 @@ The flow aggregation spread between these two runs is large enough to demonstrat
 | Batch detection, 10k packets | 3.0735 ms | 3.0692–3.0777 ms |
 
 The hosted runner's observed numbers vary materially between runs even with the same OS image and compiler. These measurements document the benchmark harness and current order of magnitude; they are not suitable for cross-machine comparisons or a release throughput claim.
+
+## Local reference run — Intel Celeron N4500 (2026-11-25)
+
+A five-repeat local run was supplied from an Arch Linux x86_64 machine:
+
+- CPU: Intel Celeron N4500, 2 cores / 2 threads, 1.10 GHz base (up to 2.80 GHz)
+- OS/kernel: Arch Linux, Linux 7.3.4-arch1-2
+- Rust/Cargo: 1.100.0
+- Commit: `012ab70a3a587e70b10299f05de2da6ceb215a59`
+- Criterion: 100 samples per benchmark in each of five invocations
+- Working tree: clean
+
+| Benchmark | Median estimate across 5 runs | Range of run estimates |
+|---|---:|---:|
+| PCAP ingestion, 20k packets | 2.2165 ms | 2.2109–2.5430 ms |
+| Flow aggregation, 10k packets | 9.2343 ms | 9.1214–9.6743 ms |
+| Batch detection, 10k packets | 8.1257 ms | 8.0116–8.2127 ms |
+
+Approximate workload rates derived from the median estimates (not end-to-end application throughput):
+
+- PCAP ingestion: 9.02 million packets/s
+- Flow aggregation: 1.08 million normalized packets/s
+- Batch detection: 1.23 million normalized packets/s
+
+The ingestion suite's third run (2.5430 ms) is notably slower than its other four runs, while the analysis suites are more consistent. Keep the per-run data and Criterion intervals when investigating regressions; do not treat these derived rates as production throughput. This is a **machine-specific reference baseline**, not a cross-machine performance target. Re-run on the same machine, power profile, toolchain, and workload when comparing future changes.
+
+The uploaded report was generated at `2026-11-25T05:27:53Z`. Its duplicate copy had the same SHA-256 and is not a second benchmark session.
