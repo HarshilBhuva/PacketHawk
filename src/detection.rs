@@ -137,8 +137,19 @@ impl PortScanDetector {
             })
             .collect();
         ports.sort_unstable();
-        let sample = ports.iter().take(12).map(u16::to_string).collect::<Vec<_>>().join(", ");
-        let (source, destination) = match key { ScanKey::Vertical { source, destination } => (source, destination), _ => return None };
+        let sample = ports
+            .iter()
+            .take(12)
+            .map(u16::to_string)
+            .collect::<Vec<_>>()
+            .join(", ");
+        let (source, destination) = match key {
+            ScanKey::Vertical {
+                source,
+                destination,
+            } => (source, destination),
+            _ => return None,
+        };
         Some(SecurityAlert {
             rule_id: "PORT_SCAN_VERTICAL".into(),
             title: "Potential vertical port scan".into(),
@@ -157,7 +168,8 @@ impl PortScanDetector {
                     self.window_ns / 1_000_000_000
                 ),
                 format!("Destination port sample: {sample}."),
-                "Legitimate service discovery can produce similar traffic; review this indicator.".into(),
+                "Legitimate service discovery can produce similar traffic; review this indicator."
+                    .into(),
             ],
         })
     }
@@ -200,8 +212,19 @@ impl PortScanDetector {
             })
             .collect();
         hosts.sort_unstable();
-        let sample = hosts.iter().take(12).map(ToString::to_string).collect::<Vec<_>>().join(", ");
-        let (source, destination_port) = match key { ScanKey::Horizontal { source, destination_port } => (source, destination_port), _ => return None };
+        let sample = hosts
+            .iter()
+            .take(12)
+            .map(ToString::to_string)
+            .collect::<Vec<_>>()
+            .join(", ");
+        let (source, destination_port) = match key {
+            ScanKey::Horizontal {
+                source,
+                destination_port,
+            } => (source, destination_port),
+            _ => return None,
+        };
         Some(SecurityAlert {
             rule_id: "PORT_SCAN_HORIZONTAL".into(),
             title: "Potential horizontal port scan".into(),
@@ -237,10 +260,18 @@ impl PortScanDetector {
             .min_by_key(|(_, t)| t.last_updated_ns)
             .map(|(k, t)| (t.last_updated_ns, k.clone()));
         match (oldest_vertical, oldest_horizontal) {
-            (Some((vt, vk)), Some((ht, hk))) if vt <= ht => { self.vertical.remove(&vk); }
-            (Some(_), Some((_, hk))) => { self.horizontal.remove(&hk); }
-            (Some((_, vk)), None) => { self.vertical.remove(&vk); }
-            (None, Some((_, hk))) => { self.horizontal.remove(&hk); }
+            (Some((vt, vk)), Some((ht, _hk))) if vt <= ht => {
+                self.vertical.remove(&vk);
+            }
+            (Some(_), Some((_, hk))) => {
+                self.horizontal.remove(&hk);
+            }
+            (Some((_, vk)), None) => {
+                self.vertical.remove(&vk);
+            }
+            (None, Some((_, hk))) => {
+                self.horizontal.remove(&hk);
+            }
             (None, None) => {}
         }
     }
