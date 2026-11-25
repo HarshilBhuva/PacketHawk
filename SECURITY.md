@@ -2,7 +2,7 @@
 
 ## Project status
 
-PacketHawk is an early-stage, offline-first network capture analysis tool. No stable release has been published. Security fixes are applied to the latest `main` branch.
+PacketHawk is an offline-first network capture analysis tool. The current published release is v0.1.0 for Linux x86_64. Security fixes are applied to the latest `main` branch.
 
 ## Reporting a vulnerability
 
