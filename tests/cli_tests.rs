@@ -11,7 +11,9 @@ fn run_cli(args: &[&str]) -> Output {
 }
 
 fn empty_pcap() -> Vec<u8> {
-    vec![0xd4, 0xc3, 0xb2, 0xa1, 2, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff, 0, 0, 1, 0, 0, 0]
+    vec![
+        0xd4, 0xc3, 0xb2, 0xa1, 2, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff, 0, 0, 1, 0, 0, 0,
+    ]
 }
 
 fn write_empty_capture() -> (tempfile::TempDir, std::path::PathBuf) {
