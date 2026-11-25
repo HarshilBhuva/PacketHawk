@@ -134,10 +134,10 @@ impl PortScanStream {
                 let observed: std::collections::BTreeSet<_> = ports.keys().copied().collect();
                 let severity =
                     if observed.len() >= self.config.port_scan_unique_ports.saturating_mul(2) {
-                    Severity::High
-                } else {
-                    Severity::Medium
-                };
+                        Severity::High
+                    } else {
+                        Severity::Medium
+                    };
                 let first_seen = state
                     .events
                     .front()
@@ -175,7 +175,10 @@ impl PortScanStream {
                 } else {
                     Severity::Medium
                 };
-                let first_seen = state.events.front().map_or(packet.timestamp_ns, |item| item.timestamp_ns);
+                let first_seen = state
+                    .events
+                    .front()
+                    .map_or(packet.timestamp_ns, |item| item.timestamp_ns);
                 self.alerts.push(SecurityAlert {
                     rule_id: "PORT_SCAN_HORIZONTAL".into(),
                     title: format!("Horizontal scan of destination port {port}"),
