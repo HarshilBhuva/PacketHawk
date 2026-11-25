@@ -198,3 +198,41 @@ fn streaming_engine_suppresses_beaconing_when_intervals_are_zero() {
 
     assert_eq!(report.beaconing.stats.alerts, 0);
 }
+
+#[test]
+fn streaming_engine_reports_per_source_state_eviction() {
+    let mut engine = DetectionEngine::new(config()).stream();
+    for timestamp in 1..=4_097 {
+        engine.observe(&packet(
+            timestamp,
+            ip(10, 0, 0, 1),
+            ip(10, 0, 0, 2),
+            443,
+            TransportProtocol::Tcp,
+            None,
+        ));
+    }
+
+    let report = engine.finish();
+
+    assert_eq!(report.port_scan.stats.state_evictions, 1);
+    assert_eq!(report.stats.state_evictions, 1);
+}
+
+#[test]
+fn streaming_and_batch_reports_match_for_timestamp_ordered_input() {
+    let packets = scenario();
+    let batch = DetectionEngine::new(config()).analyze(&packets);
+    let mut engine = DetectionEngine::new(config()).stream();
+    for packet in &packets {
+        engine.observe(packet);
+    }
+    let streamed = engine.finish();
+
+    assert_eq!(batch.port_scan.alerts, streamed.port_scan.alerts);
+    assert_eq!(batch.beaconing.alerts.len(), streamed.beaconing.alerts.len());
+    assert_eq!(
+        batch.dns_anomaly.alerts,
+        streamed.dns_anomaly.alerts
+    );
+}
